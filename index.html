@@ -43,7 +43,6 @@
     z-index:0;
   }
   
-  /* Hacemos el contenedor principal un poco más ancho para albergar 4 columnas */
   #app{position:relative; z-index:1; max-width:1400px; margin:0 auto; padding:20px 20px 60px;}
 
   .board-header{
@@ -82,10 +81,6 @@
 
   .sync-note{font-size:12px; color:var(--muted); text-align:right; margin-top:2px;}
 
-  /* 
-   * Modificamos la cuadrícula (grid) para que tenga 4 columnas en lugar de 3.
-   * Agregamos diseño responsivo para que en pantallas pequeñas se apilen.
-   */
   .board{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
   @media (max-width:1024px){ .board{grid-template-columns:repeat(2,1fr);} }
   @media (max-width:600px){ .board{grid-template-columns:1fr;} }
@@ -113,12 +108,12 @@
     background:var(--card); color:var(--ink); border-radius:10px;
     padding:13px 13px 10px; box-shadow:var(--shadow); position:relative;
     cursor:grab; border:1px solid var(--card-line);
-    margin-top: 12px; /* Espacio extra arriba para que la cinta no se corte */
+    margin-top: 12px;
   }
   .card:active{cursor:grabbing;}
   .card.dragging{opacity:.35;}
   .card--done{
-    box-shadow:var(--shadow), 0 0 0 2px rgba(54,156,53,.45); /* Reflejo del borde verde adaptado */
+    box-shadow:var(--shadow), 0 0 0 2px rgba(54,156,53,.45);
   }
   
   .tape{
@@ -130,15 +125,29 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     font-family:'Work Sans',sans-serif;
   }
+  
+  /* Clases nuevas para las alertas visuales de las fechas */
+  .badge-due { font-size: 11.5px; font-weight: 600; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 5px; }
+  .badge-due.overdue { background: rgba(192, 86, 63, 0.15); color: var(--danger); }
+  .badge-due.warning { background: rgba(217, 164, 65, 0.2); color: #b3822a; }
+  .badge-due.ok { color: var(--ink-soft); font-weight: 500; }
+
   .card-text{font-size:14.5px; line-height:1.4; margin:6px 0 10px; word-break:break-word; white-space:pre-wrap;}
-  .edit-wrapper{margin:6px 0 10px;}
-  .edit-textarea{
-    width:100%; font-family:inherit; font-size:14px; color:var(--ink);
+  .edit-wrapper{margin:6px 0 10px; display: flex; flex-direction: column; gap: 8px;}
+  
+  .add-input, .edit-textarea, .date-input {
+    width:100%; font-family:inherit; color:var(--ink);
     background:var(--white); border:1px solid var(--card-line); border-radius:8px;
-    padding:8px 9px; resize:vertical; line-height:1.4;
+    padding:8px 9px; line-height:1.4; font-size: 13.5px;
   }
-  .edit-textarea:focus{outline:2px solid var(--doing); outline-offset:1px;}
-  .edit-actions{display:flex; justify-content:flex-end; gap:6px; margin-top:6px;}
+  .add-input{ background:rgba(255,255,255,.07); color:var(--white); border-color:rgba(255,255,255,.16); resize:none; }
+  .add-input::placeholder{color:rgba(255,255,255,.4);}
+  .add-input:focus, .edit-textarea:focus, .date-input:focus { outline:2px solid var(--doing); outline-offset:1px; }
+  
+  /* Ajuste para el input de fecha en el modo oscuro */
+  .date-input-dark { background:rgba(255,255,255,.07); color:var(--white); border:1px solid rgba(255,255,255,.16); margin-top: 6px; }
+  
+  .edit-actions{display:flex; justify-content:flex-end; gap:6px;}
   .edit-actions button{
     font-family:inherit; font-size:12.5px; font-weight:600; padding:6px 11px;
     border-radius:7px; border:none; cursor:pointer;
@@ -149,118 +158,56 @@
   .card-time{font-size:10.5px; color:var(--ink-soft);}
 
   .card-actions{position:relative;}
-  .menu-btn{
-    background:none; border:none; color:var(--ink-soft); cursor:pointer;
-    font-size:16px; padding:2px 6px; border-radius:6px; line-height:1;
-  }
+  .menu-btn{ background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:16px; padding:2px 6px; border-radius:6px; line-height:1; }
   .menu-btn:hover{background:rgba(0,0,0,.06);}
-  .menu{
-    position:absolute; right:0; top:22px; background:var(--white);
-    border:1px solid var(--card-line); border-radius:10px; box-shadow:var(--shadow);
-    min-width:170px; z-index:5; overflow:hidden; display:none;
-  }
+  .menu{ position:absolute; right:0; top:22px; background:var(--white); border:1px solid var(--card-line); border-radius:10px; box-shadow:var(--shadow); min-width:170px; z-index:5; overflow:hidden; display:none; }
   .menu.open{display:block;}
-  .menu button{
-    display:block; width:100%; text-align:left; background:none; border:none;
-    padding:9px 12px; font-size:13px; color:var(--ink); cursor:pointer; font-family:inherit;
-  }
+  .menu button{ display:block; width:100%; text-align:left; background:none; border:none; padding:9px 12px; font-size:13px; color:var(--ink); cursor:pointer; font-family:inherit; }
   .menu button:hover{background:rgba(0,0,0,.05);}
   .menu button.danger{color:var(--danger);}
-  .menu .menu-label{
-    padding:8px 12px 4px; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--muted);
-  }
+  .menu .menu-label{ padding:8px 12px 4px; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
 
   .add-row{margin-top:12px;}
-  .add-input{
-    width:100%; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16);
-    color:var(--white); border-radius:9px; padding:9px 11px; font-size:13.5px;
-    font-family:inherit; resize:none;
-  }
-  .add-input::placeholder{color:rgba(255,255,255,.4);}
-  .add-input:focus{outline:none; border-color:rgba(255,255,255,.4);}
-  .add-btn{
-    margin-top:7px; width:100%; padding:8px; border-radius:9px; border:none;
-    font-family:inherit; font-weight:600; font-size:13px; cursor:pointer;
-    background:rgba(255,255,255,.14); color:var(--white); transition:background .15s;
-  }
+  .add-btn{ margin-top:7px; width:100%; padding:8px; border-radius:9px; border:none; font-family:inherit; font-weight:600; font-size:13px; cursor:pointer; background:rgba(255,255,255,.14); color:var(--white); transition:background .15s; }
   .add-btn:hover{background:rgba(255,255,255,.22);}
 
-  .empty-hint{
-    color:var(--muted); font-size:12.5px; text-align:center; padding:14px 4px;
-    border:1px dashed rgba(255,255,255,.16); border-radius:10px;
-  }
+  .empty-hint{ color:var(--muted); font-size:12.5px; text-align:center; padding:14px 4px; border:1px dashed rgba(255,255,255,.16); border-radius:10px; }
 
-  /* =========================================
-     Estilos de las Métricas (Cuarta Columna)
-     ========================================= */
+  /* Métricas */
   .metrics-column { background: rgba(0,0,0,.25); border-color: rgba(255,255,255,.05); }
-  .metric-item { 
-    background: rgba(255,255,255,.05); 
-    border: 1px solid rgba(255,255,255,.1); 
-    padding: 14px; 
-    border-radius: 10px; 
-    margin-bottom: 10px; 
-  }
+  .metric-item { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); padding: 14px; border-radius: 10px; margin-bottom: 10px; }
   .metric-name { font-weight: 600; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--white); }
   .metric-stats { display: flex; gap: 10px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
   .metric-stat span { font-weight: 700; color: var(--white); font-size: 13px; }
   .progress-bar { height: 6px; background: rgba(0,0,0,.3); border-radius: 3px; margin-top: 12px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--done); border-radius: 3px; transition: width 0.3s ease; }
 
-  /* Modales y utilidades base */
-  .modal-overlay{
-    position:fixed; inset:0; background:rgba(10,18,16,.72);
-    display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;
-  }
+  /* Modales */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(10,18,16,.72); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
   .modal-overlay.hidden{display:none;}
-  .modal{
-    background:var(--card); color:var(--ink); border-radius:16px; padding:26px;
-    width:100%; max-width:360px; box-shadow:var(--shadow);
-  }
+  .modal{ background:var(--card); color:var(--ink); border-radius:16px; padding:26px; width:100%; max-width:360px; box-shadow:var(--shadow); }
   .modal h2{font-family:'Fraunces',serif; margin:0 0 6px; font-size:22px;}
   .modal p{font-size:13.5px; color:var(--ink-soft); margin:0 0 16px; line-height:1.5;}
-  .modal input{
-    width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--card-line);
-    font-family:inherit; font-size:14.5px; margin-bottom:14px;
-  }
+  .modal input[type="text"]{ width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--card-line); font-family:inherit; font-size:14.5px; margin-bottom:14px; }
   .modal input:focus{outline:2px solid var(--doing); outline-offset:1px;}
   .modal-actions{display:flex; gap:8px;}
-  .btn-primary{
-    flex:1; padding:11px; border-radius:9px; border:none; background:var(--ink);
-    color:var(--white); font-weight:600; font-size:14px; cursor:pointer; font-family:inherit;
-  }
+  .btn-primary{ flex:1; padding:11px; border-radius:9px; border:none; background:var(--ink); color:var(--white); font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
   .btn-primary:disabled{opacity:.4; cursor:not-allowed;}
-
-  .loading-screen{
-    position:fixed; inset:0; background:var(--bg); display:flex; align-items:center;
-    justify-content:center; flex-direction:column; gap:10px; z-index:100; color:var(--muted);
-    font-size:13px;
-  }
+  .loading-screen{ position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; z-index:100; color:var(--muted); font-size:13px; }
   .loading-screen.hidden{display:none;}
-  .spinner{
-    width:28px; height:28px; border-radius:50%; border:3px solid rgba(255,255,255,.15);
-    border-top-color:var(--todo); animation:spin .8s linear infinite;
-  }
+  .spinner{ width:28px; height:28px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:var(--todo); animation:spin .8s linear infinite; }
   @keyframes spin{to{transform:rotate(360deg);}}
-  @media (prefers-reduced-motion:reduce){ .spinner{animation:none;} }
-
-  .config-warning{
-    position:fixed; inset:0; background:var(--bg); z-index:200; display:flex;
-    align-items:center; justify-content:center; padding:30px; text-align:center;
-  }
+  .config-warning{ position:fixed; inset:0; background:var(--bg); z-index:200; display:flex; align-items:center; justify-content:center; padding:30px; text-align:center; }
   .config-warning.hidden{display:none;}
   .config-warning .box{max-width:440px;}
   .config-warning h2{font-family:'Fraunces',serif; margin-bottom:10px;}
   .config-warning code{background:rgba(255,255,255,.1); padding:2px 6px; border-radius:5px;}
   .config-warning p{color:var(--muted); line-height:1.6; font-size:14px;}
-
   footer{text-align:center; color:var(--muted); font-size:11.5px; margin-top:34px; opacity:.7;}
 </style>
 </head>
 <body>
 
-<!-- ⚠️ PASO OBLIGATORIO: reemplaza estos dos valores con los de tu proyecto Supabase -->
 <script>
   const SUPABASE_URL = 'https://dasrrzlyfzoqdtlvbdbt.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_QYmfscKalC7yPA77LiwBgg_iY6FE1_P';
@@ -296,9 +243,7 @@
       <div class="sync-note" id="sync-note">Sincronizando…</div>
     </div>
   </div>
-
   <div class="board" id="board"></div>
-
   <footer>Este tablero se guarda en Supabase y lo ven todas las personas que abran este mismo enlace.</footer>
 </div>
 
@@ -365,27 +310,24 @@
     if(el) el.textContent = text;
   }
 
-  // ---------- Data layer (Supabase) ----------
+  // ---------- Capa de Datos ----------
   async function fetchTasks(){
     const { data, error } = await sb.from('tasks').select('*').order('created_at', {ascending:true});
     if(error){ setSyncNote('Error al cargar'); console.error(error); return []; }
     return data;
   }
   
-  // Inserta una nueva tarea en la base de datos
-  async function addTask(columnId, text){
-    const { error } = await sb.from('tasks').insert({
-      text, column_id: columnId, author: null
-    });
+  /* Modificamos el guardado para incluir due_date en la petición a la BD */
+  async function addTask(columnId, text, dueDate){
+    const payload = { text, column_id: columnId, author: null };
+    if (dueDate) payload.due_date = dueDate; // Solo se envía si el usuario seleccionó una fecha
+    
+    const { error } = await sb.from('tasks').insert(payload);
     if(error){ setSyncNote('No se pudo guardar'); console.error(error); }
   }
   
-  // Actualiza la columna de la tarea y le asigna el autor si sale de "Por hacer"
   async function moveTask(id, columnId){
-    const updates = {
-      column_id: columnId,
-      author: columnId === 'todo' ? null : profile.name
-    };
+    const updates = { column_id: columnId, author: columnId === 'todo' ? null : profile.name };
     const { error } = await sb.from('tasks').update(updates).eq('id', id);
     if(error){ setSyncNote('No se pudo mover'); console.error(error); }
   }
@@ -395,20 +337,22 @@
     if(error){ setSyncNote('No se pudo eliminar'); console.error(error); }
   }
   
-  async function updateTaskText(id, text){
-    const { error } = await sb.from('tasks').update({ text }).eq('id', id);
+  /* Modificamos la actualización para poder guardar una nueva fecha desde el editor */
+  async function updateTaskData(id, text, dueDate){
+    const payload = { text };
+    if (dueDate !== undefined) payload.due_date = dueDate || null; 
+    
+    const { error } = await sb.from('tasks').update(payload).eq('id', id);
     if(error){ setSyncNote('No se pudo editar'); console.error(error); }
   }
 
-  // ---------- Rendering ----------
+  // ---------- Motor de Renderizado ----------
   function render(){
     const board = document.getElementById('board');
     board.innerHTML = '';
 
-    // Renderizamos las 3 columnas principales de Kanban
     COLUMN_DEFS.forEach(col => {
       const colTasks = tasks.filter(t => t.column_id === col.id);
-
       const colEl = document.createElement('div');
       colEl.className = 'column';
       colEl.dataset.columnId = col.id;
@@ -432,47 +376,41 @@
 
       const cardsEl = document.createElement('div');
       cardsEl.className = 'cards';
-
       if(colTasks.length === 0){
-        const empty = document.createElement('div');
-        empty.className = 'empty-hint';
-        empty.textContent = 'Sin tarjetas todavía';
-        cardsEl.appendChild(empty);
+        cardsEl.innerHTML = `<div class="empty-hint">Sin tarjetas todavía</div>`;
       }
-
       colTasks.forEach(task => cardsEl.appendChild(renderCard(task)));
       colEl.appendChild(cardsEl);
 
       const addRow = document.createElement('div');
       addRow.className = 'add-row';
+      /* Se agregó un input nativo tipo "date" para establecer el límite */
       addRow.innerHTML = `
-        <textarea class="add-input" rows="2" placeholder="Escribe una tarea y presiona Agregar…"></textarea>
+        <textarea class="add-input" rows="2" placeholder="Escribe una tarea..."></textarea>
+        <input type="date" class="date-input date-input-dark" title="Fecha límite (opcional)">
         <button class="add-btn">+ Agregar tarjeta</button>
       `;
       const textarea = addRow.querySelector('textarea');
+      const dateInput = addRow.querySelector('input[type="date"]');
       const addBtn = addRow.querySelector('button');
       
       const submit = () => {
         const text = textarea.value.trim();
         if(!text) return;
-        addTask(col.id, text);
+        addTask(col.id, text, dateInput.value);
         textarea.value = '';
+        dateInput.value = '';
       };
       
       addBtn.addEventListener('click', submit);
-      textarea.addEventListener('keydown', (e) => {
-        if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submit(); }
-      });
+      textarea.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submit(); } });
       colEl.appendChild(addRow);
-
       board.appendChild(colEl);
     });
     
-    // Renderizamos la cuarta columna con las métricas analíticas
     board.appendChild(createMetricsPanel());
   }
 
-  // Genera el HTML de una tarjeta individual
   function renderCard(task){
     const card = document.createElement('div');
     const isDone = task.column_id === 'done';
@@ -482,8 +420,6 @@
     card.dataset.id = task.id;
 
     let tapeHtml = '';
-    
-    // Si la tarjeta está lista, aplicamos la cinta verde exigida. Si no, usa el color del autor.
     if (isDone) {
       tapeHtml = `<div class="tape" style="background:#369C35; color:#ffffff;">Hecho</div>`;
     } else {
@@ -491,6 +427,36 @@
       tapeHtml = task.author
         ? `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.author)}</div>`
         : `<div class="tape" style="background:${tapeColor}"></div>`;
+    }
+
+    /* 
+     * Lógica de Alertas Visuales (Evaluación Matemática de Fechas) 
+     * Compara la fecha actual con la fecha de la base de datos para asignar 
+     * clases CSS de advertencia (vencida, por vencer o a tiempo).
+     */
+    let alertHtml = '';
+    if (task.due_date) {
+      const due = new Date(task.due_date);
+      // Forzamos la zona horaria añadiendo el desfase para evitar que marque un día antes por error
+      due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
+      
+      if (!isDone) {
+        const now = new Date();
+        now.setHours(0,0,0,0); // Normalizamos el día actual a la medianoche para una resta limpia
+        const diffMs = due.getTime() - now.getTime();
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+        if (diffDays < 0) {
+          alertHtml = `<div class="badge-due overdue">⚠️ Venció el ${due.toLocaleDateString()}</div>`;
+        } else if (diffDays <= 2) { // Rango de 48 horas como métrica de urgencia
+          alertHtml = `<div class="badge-due warning">⏱️ Vence pronto (${due.toLocaleDateString()})</div>`;
+        } else {
+          alertHtml = `<div class="badge-due ok">📅 Para el ${due.toLocaleDateString()}</div>`;
+        }
+      } else {
+        // Si ya está completada, se muestra de forma sutil sin colores de alerta
+        alertHtml = `<div class="badge-due ok">✅ Era para el ${due.toLocaleDateString()}</div>`;
+      }
     }
 
     card.addEventListener('dragstart', () => { draggingId = task.id; card.classList.add('dragging'); });
@@ -510,6 +476,7 @@
           <button class="danger" data-delete="1">Eliminar tarjeta</button>
         </div>
       </div>
+      ${alertHtml}
       <div class="card-text"></div>
       <div class="card-meta">
         <span class="card-time">${timeAgo(task.created_at)}</span>
@@ -527,37 +494,30 @@
     });
     
     menu.querySelectorAll('[data-move]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        moveTask(task.id, btn.dataset.move);
-        menu.classList.remove('open');
-      });
+      btn.addEventListener('click', (e) => { e.stopPropagation(); moveTask(task.id, btn.dataset.move); menu.classList.remove('open'); });
     });
     
     menu.querySelector('[data-edit]').addEventListener('click', (e) => {
-      e.stopPropagation();
-      menu.classList.remove('open');
-      startEdit(card, task);
+      e.stopPropagation(); menu.classList.remove('open'); startEdit(card, task);
     });
-    
     menu.querySelector('[data-delete]').addEventListener('click', (e) => {
-      e.stopPropagation();
-      deleteTask(task.id);
-      menu.classList.remove('open');
+      e.stopPropagation(); deleteTask(task.id); menu.classList.remove('open');
     });
 
     return card;
   }
 
-  // Activa el modo de edición de texto directamente dentro de la tarjeta
   function startEdit(card, task){
     const textEl = card.querySelector('.card-text');
     card.draggable = false;
 
     const wrapper = document.createElement('div');
     wrapper.className = 'edit-wrapper';
+    
+    /* Inyectamos los campos de texto y fecha en estado de edición para capturar los nuevos valores */
     wrapper.innerHTML = `
       <textarea class="edit-textarea" rows="3"></textarea>
+      <input type="date" class="date-input" style="font-size: 13px;" value="${task.due_date || ''}">
       <div class="edit-actions">
         <button class="edit-cancel">Cancelar</button>
         <button class="edit-save">Guardar</button>
@@ -565,34 +525,24 @@
     `;
     
     const textarea = wrapper.querySelector('textarea');
+    const dateInput = wrapper.querySelector('input[type="date"]');
     textarea.value = task.text;
     textEl.replaceWith(wrapper);
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 
-    wrapper.querySelector('.edit-cancel').addEventListener('click', (e) => {
-      e.stopPropagation();
-      render();
-    });
+    wrapper.querySelector('.edit-cancel').addEventListener('click', (e) => { e.stopPropagation(); render(); });
     
     wrapper.querySelector('.edit-save').addEventListener('click', (e) => {
       e.stopPropagation();
       const newText = textarea.value.trim();
       if(!newText) return;
-      updateTaskText(task.id, newText);
+      updateTaskData(task.id, newText, dateInput.value);
     });
     
-    textarea.addEventListener('keydown', (e) => {
-      e.stopPropagation();
-      if(e.key === 'Enter' && !e.shiftKey){
-        e.preventDefault();
-        wrapper.querySelector('.edit-save').click();
-      }
-      if(e.key === 'Escape'){ render(); }
-    });
+    textarea.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); wrapper.querySelector('.edit-save').click(); } if(e.key === 'Escape'){ render(); } });
   }
   
-  // Crea el elemento DOM para la cuarta columna con las analíticas del equipo
   function createMetricsPanel(){
     const colEl = document.createElement('div');
     colEl.className = 'column metrics-column';
@@ -608,32 +558,18 @@
     const listEl = document.createElement('div');
     listEl.className = 'cards';
     
-    // Objeto para acumular el conteo de las métricas requeridas
     const stats = {};
-    
     tasks.forEach(t => {
       if (!t.author) return; 
-      
-      if (!stats[t.author]) {
-        stats[t.author] = { done: 0, pending: 0 };
-      }
-      
-      if (t.column_id === 'done') {
-        stats[t.author].done++;
-      } else if (t.column_id === 'doing') {
-        stats[t.author].pending++;
-      }
+      if (!stats[t.author]) { stats[t.author] = { done: 0, pending: 0 }; }
+      if (t.column_id === 'done') { stats[t.author].done++; } 
+      else if (t.column_id === 'doing') { stats[t.author].pending++; }
     });
 
     const authors = Object.keys(stats);
-    
     if (authors.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'empty-hint';
-      empty.textContent = 'Asigna tarjetas para ver las métricas.';
-      listEl.appendChild(empty);
+      listEl.innerHTML = `<div class="empty-hint">Asigna tarjetas para ver las métricas.</div>`;
     } else {
-      // Recorremos los datos para imprimir el progreso de cada estudiante
       authors.forEach(author => {
         const data = stats[author];
         const total = data.done + data.pending;
@@ -658,25 +594,14 @@
         listEl.appendChild(item);
       });
     }
-    
     colEl.appendChild(listEl);
     return colEl;
   }
 
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
-  });
+  document.addEventListener('click', () => { document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open')); });
 
-  // ---------- Profile (localStorage: solo vive en este navegador) ----------
-  function loadProfile(){
-    try{
-      const raw = localStorage.getItem(PROFILE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    }catch(e){ return null; }
-  }
-  function saveProfile(p){
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
-  }
+  function loadProfile(){ try{ const raw = localStorage.getItem(PROFILE_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; } }
+  function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
   function applyProfilePill(){
     document.getElementById('profile-name').textContent = profile.name;
     document.getElementById('profile-avatar').textContent = initials(profile.name);
@@ -691,16 +616,10 @@
     overlay.classList.remove('hidden');
     setTimeout(() => input.focus(), 50);
   }
-  function closeProfileModal(){
-    document.getElementById('profile-modal').classList.add('hidden');
-  }
+  function closeProfileModal(){ document.getElementById('profile-modal').classList.add('hidden'); }
 
-  document.getElementById('profile-input').addEventListener('input', (e) => {
-    document.getElementById('profile-save').disabled = !e.target.value.trim();
-  });
-  document.getElementById('profile-input').addEventListener('keydown', (e) => {
-    if(e.key === 'Enter' && e.target.value.trim()) document.getElementById('profile-save').click();
-  });
+  document.getElementById('profile-input').addEventListener('input', (e) => { document.getElementById('profile-save').disabled = !e.target.value.trim(); });
+  document.getElementById('profile-input').addEventListener('keydown', (e) => { if(e.key === 'Enter' && e.target.value.trim()) document.getElementById('profile-save').click(); });
   document.getElementById('profile-save').addEventListener('click', () => {
     const name = document.getElementById('profile-input').value.trim();
     if(!name) return;
@@ -708,37 +627,25 @@
     saveProfile(profile);
     applyProfilePill();
     closeProfileModal();
-    render(); // Refrescamos para reasignar tareas si el nombre cambia
+    render(); 
   });
-  document.getElementById('profile-pill').addEventListener('click', () => {
-    openProfileModal(profile ? profile.name : '');
-  });
+  document.getElementById('profile-pill').addEventListener('click', () => { openProfileModal(profile ? profile.name : ''); });
 
-  // ---------- Realtime ----------
   function subscribeRealtime(){
-    sb.channel('tasks-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, async () => {
+    sb.channel('tasks-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, async () => {
         tasks = await fetchTasks();
         render();
         setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
-      })
-      .subscribe();
+      }).subscribe();
   }
 
-  // ---------- Boot ----------
   async function boot(){
     profile = loadProfile();
     tasks = await fetchTasks();
-
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('app').style.display = 'block';
 
-    if(profile && profile.name){
-      applyProfilePill();
-    } else {
-      openProfileModal('');
-    }
-
+    if(profile && profile.name){ applyProfilePill(); } else { openProfileModal(''); }
     render();
     setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
     subscribeRealtime();

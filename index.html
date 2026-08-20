@@ -123,6 +123,7 @@
     font-family:'Fraunces',serif; font-weight:700; color:#20140c;
   }
   .card-who-name{font-size:11.5px; color:var(--ink-soft); font-weight:600;}
+  .card-who-empty{font-size:11px; color:var(--ink-soft); opacity:.55; font-style:italic;}
   .card-time{font-size:10.5px; color:var(--ink-soft);}
 
   .card-actions{position:relative;}
@@ -333,12 +334,18 @@
   }
   async function addTask(columnId, text){
     const { error } = await sb.from('tasks').insert({
-      text, column_id: columnId, author: profile.name
+      text, column_id: columnId, author: null
     });
     if(error){ setSyncNote('No se pudo guardar'); console.error(error); }
   }
   async function moveTask(id, columnId){
-    const { error } = await sb.from('tasks').update({ column_id: columnId }).eq('id', id);
+    // Al mover una tarjeta fuera de "Por hacer", queda asignada a quien la mueve.
+    // Si se regresa a "Por hacer", vuelve a quedar sin asignar.
+    const updates = {
+      column_id: columnId,
+      author: columnId === 'todo' ? null : profile.name
+    };
+    const { error } = await sb.from('tasks').update(updates).eq('id', id);
     if(error){ setSyncNote('No se pudo mover'); console.error(error); }
   }
   async function deleteTask(id){
@@ -418,7 +425,7 @@
     card.draggable = true;
     card.dataset.id = task.id;
 
-    const tapeColor = colorForName(task.author || '?');
+    const tapeColor = task.author ? colorForName(task.author) : 'rgba(255,255,255,.28)';
 
     card.addEventListener('dragstart', () => { draggingId = task.id; card.classList.add('dragging'); });
     card.addEventListener('dragend', () => { card.classList.remove('dragging'); draggingId = null; });
@@ -438,10 +445,12 @@
       </div>
       <div class="card-text"></div>
       <div class="card-meta">
+        ${(task.column_id !== 'todo' && task.author) ? `
         <div class="card-who">
-          <div class="mini-avatar" style="background:${tapeColor}">${initials(task.author || '?')}</div>
-          <span class="card-who-name">${escapeHtml(task.author || 'Sin nombre')}</span>
+          <div class="mini-avatar" style="background:${tapeColor}">${initials(task.author)}</div>
+          <span class="card-who-name">${escapeHtml(task.author)}</span>
         </div>
+        ` : `<span class="card-who-empty">Sin asignar</span>`}
         <span class="card-time">${timeAgo(task.created_at)}</span>
       </div>
     `;

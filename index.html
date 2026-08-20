@@ -331,13 +331,18 @@
   <footer>Este tablero se guarda en Supabase y lo ven todas las personas que abran este mismo enlace.</footer>
 </div>
 
-<div class="modal-overlay hidden" id="profile-modal">
-  <div class="modal">
-    <h2>¿Cómo te llamas?</h2>
-    <p>No necesitas cuenta ni contraseña. Tu nombre solo se guarda en este navegador y se usa para identificar tus tarjetas.</p>
-    <input type="text" id="profile-input" maxlength="30" placeholder="Tu nombre">
-    <div class="modal-actions">
-      <button class="btn-primary" id="profile-save" disabled>Entrar al tablero</button>
+<!-- Modal del panel de monitoreo de participación -->
+<div class="modal-overlay hidden" id="metrics-modal">
+  <div class="modal" style="max-width: 440px;">
+    <h2>Métricas del Equipo</h2>
+    <p>Monitoreo de participación y avance individual.</p>
+    
+    <div class="metrics-list" id="metrics-list">
+      <!-- Las métricas se inyectarán aquí desde JavaScript -->
+    </div>
+    
+    <div class="modal-actions" style="margin-top: 24px;">
+      <button class="btn-primary" id="metrics-close">Cerrar panel</button>
     </div>
   </div>
 </div>
@@ -663,7 +668,77 @@
   document.getElementById('profile-pill').addEventListener('click', () => {
     openProfileModal(profile ? profile.name : '');
   });
+  
+// ---------- Panel de Monitoreo (Métricas) ----------
+  
+  // Calcula y renderiza el avance de cada integrante
+  function openMetricsModal() {
+    const list = document.getElementById('metrics-list');
+    list.innerHTML = '';
+    
+    // Objeto para agrupar y contar las tareas por autor
+    const stats = {};
+    
+    tasks.forEach(t => {
+      // Ignoramos las tareas sin autor (las que están en "Por hacer")
+      if (!t.author) return; 
+      
+      // Inicializamos contadores para un nuevo autor
+      if (!stats[t.author]) {
+        stats[t.author] = { done: 0, pending: 0 };
+      }
+      
+      // Clasificamos según la columna
+      if (t.column_id === 'done') {
+        stats[t.author].done++;
+      } else if (t.column_id === 'doing') {
+        stats[t.author].pending++;
+      }
+    });
 
+    const authors = Object.keys(stats);
+    
+    // Mostramos un mensaje si nadie ha tomado tareas aún
+    if (authors.length === 0) {
+      list.innerHTML = '<div class="empty-hint" style="color:var(--ink-soft)">No hay tareas asignadas aún. Mueve una tarea para empezar.</div>';
+    } else {
+      // Iteramos sobre cada autor para construir su tarjeta de métricas
+      authors.forEach(author => {
+        const data = stats[author];
+        const total = data.done + data.pending;
+        
+        // Calculamos el porcentaje, previniendo la división por cero
+        const percent = total === 0 ? 0 : Math.round((data.done / total) * 100);
+        
+        const item = document.createElement('div');
+        item.className = 'metric-item';
+        item.innerHTML = `
+          <div class="metric-name">
+            <span class="column-dot" style="background:${colorForName(author)}"></span>
+            ${escapeHtml(author)}
+          </div>
+          <div class="metric-stats">
+            <div class="metric-stat"><span>${data.done}</span> completadas</div>
+            <div class="metric-stat"><span>${data.pending}</span> pendientes</div>
+            <div class="metric-stat" style="margin-left:auto;"><span>${percent}%</span> avance</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${percent}%;"></div>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    document.getElementById('metrics-modal').classList.remove('hidden');
+  }
+
+  // Eventos para abrir y cerrar el modal de métricas
+  document.getElementById('metrics-close').addEventListener('click', () => {
+    document.getElementById('metrics-modal').classList.add('hidden');
+  });
+  document.getElementById('metrics-btn').addEventListener('click', openMetricsModal);
+  
   // ---------- Realtime ----------
   function subscribeRealtime(){
     sb.channel('tasks-changes')

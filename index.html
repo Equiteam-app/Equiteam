@@ -42,7 +42,9 @@
     pointer-events:none;
     z-index:0;
   }
-  #app{position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:20px 20px 60px;}
+  
+  /* Hacemos el contenedor principal un poco más ancho para albergar 4 columnas */
+  #app{position:relative; z-index:1; max-width:1400px; margin:0 auto; padding:20px 20px 60px;}
 
   .board-header{
     display:flex; align-items:flex-end; justify-content:space-between;
@@ -80,8 +82,13 @@
 
   .sync-note{font-size:12px; color:var(--muted); text-align:right; margin-top:2px;}
 
-  .board{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
-  @media (max-width:820px){ .board{grid-template-columns:1fr;} }
+  /* 
+   * Modificamos la cuadrícula (grid) para que tenga 4 columnas en lugar de 3.
+   * Agregamos diseño responsivo para que en pantallas pequeñas se apilen.
+   */
+  .board{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
+  @media (max-width:1024px){ .board{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:600px){ .board{grid-template-columns:1fr;} }
 
   .column{
     background:rgba(0,0,0,.14);
@@ -106,23 +113,14 @@
     background:var(--card); color:var(--ink); border-radius:10px;
     padding:13px 13px 10px; box-shadow:var(--shadow); position:relative;
     cursor:grab; border:1px solid var(--card-line);
+    margin-top: 12px; /* Espacio extra arriba para que la cinta no se corte */
   }
   .card:active{cursor:grabbing;}
   .card.dragging{opacity:.35;}
   .card--done{
-    box-shadow:var(--shadow), 0 0 0 2px rgba(127,166,91,.45);
+    box-shadow:var(--shadow), 0 0 0 2px rgba(54,156,53,.45); /* Reflejo del borde verde adaptado */
   }
-  .done-stamp{
-    position:absolute; top:-12px; left:16px; width:32px; height:32px; border-radius:50%;
-    background:var(--done); color:var(--white); display:flex; align-items:center; justify-content:center;
-    font-size:16px; font-weight:700; box-shadow:0 3px 7px rgba(0,0,0,.35); border:2px solid var(--card);
-    transform:rotate(-8deg); z-index:2; animation:stamp-pop .25s ease-out;
-  }
-  @keyframes stamp-pop{
-    from{ transform:rotate(-8deg) scale(0); opacity:0; }
-    to{ transform:rotate(-8deg) scale(1); opacity:1; }
-  }
-  @media (prefers-reduced-motion:reduce){ .done-stamp{animation:none;} }
+  
   .tape{
     position:absolute; top:-10px; left:16px; min-width:40px; max-width:150px; height:20px;
     border-radius:4px; opacity:.95; transform:rotate(-3deg);
@@ -193,6 +191,24 @@
     border:1px dashed rgba(255,255,255,.16); border-radius:10px;
   }
 
+  /* =========================================
+     Estilos de las Métricas (Cuarta Columna)
+     ========================================= */
+  .metrics-column { background: rgba(0,0,0,.25); border-color: rgba(255,255,255,.05); }
+  .metric-item { 
+    background: rgba(255,255,255,.05); 
+    border: 1px solid rgba(255,255,255,.1); 
+    padding: 14px; 
+    border-radius: 10px; 
+    margin-bottom: 10px; 
+  }
+  .metric-name { font-weight: 600; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--white); }
+  .metric-stats { display: flex; gap: 10px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .metric-stat span { font-weight: 700; color: var(--white); font-size: 13px; }
+  .progress-bar { height: 6px; background: rgba(0,0,0,.3); border-radius: 3px; margin-top: 12px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--done); border-radius: 3px; transition: width 0.3s ease; }
+
+  /* Modales y utilidades base */
   .modal-overlay{
     position:fixed; inset:0; background:rgba(10,18,16,.72);
     display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;
@@ -240,50 +256,11 @@
   .config-warning p{color:var(--muted); line-height:1.6; font-size:14px;}
 
   footer{text-align:center; color:var(--muted); font-size:11.5px; margin-top:34px; opacity:.7;}
-  
-  /* =========================================
-     Estilos para el botón y modal de Métricas
-     ========================================= */
-  
-  /* Botón de métricas con el mismo estilo translúcido del perfil */
-  .metrics-btn {
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.14);
-    padding: 7px 14px; 
-    border-radius: 999px;
-    color: var(--white); 
-    cursor: pointer;
-    font-family: inherit; 
-    font-size: 13px; 
-    font-weight: 600;
-    display: flex; 
-    align-items: center; 
-    gap: 6px;
-    transition: background .15s ease;
-  }
-  .metrics-btn:hover { background: rgba(255,255,255,.11); }
-  
-  /* Contenedor de la lista de métricas dentro del modal */
-  .metrics-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
-  
-  /* Tarjeta individual para cada estudiante en el modal */
-  .metric-item { 
-    background: rgba(0,0,0,.03); 
-    border: 1px solid var(--card-line); 
-    padding: 14px; 
-    border-radius: 12px; 
-  }
-  .metric-name { font-weight: 600; font-size: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-  .metric-stats { display: flex; gap: 12px; font-size: 13px; color: var(--ink-soft); }
-  .metric-stat span { font-weight: 700; color: var(--ink); }
-  
-  /* Barra de progreso visual para el porcentaje de avance */
-  .progress-bar { height: 6px; background: rgba(0,0,0,.08); border-radius: 3px; margin-top: 10px; overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--done); border-radius: 3px; transition: width 0.3s ease; }
 </style>
 </head>
 <body>
-  
+
+<!-- ⚠️ PASO OBLIGATORIO: reemplaza estos dos valores con los de tu proyecto Supabase -->
 <script>
   const SUPABASE_URL = 'https://dasrrzlyfzoqdtlvbdbt.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_QYmfscKalC7yPA77LiwBgg_iY6FE1_P';
@@ -308,41 +285,30 @@
       <h1>Tablero del equipo</h1>
       <div class="subtitle">Arrastra las tarjetas o usa el menú «⋯» para moverlas de columna.</div>
     </div>
-    <div>
-<!-- Contenedor flex para alinear el botón de métricas y el perfil -->
-    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
-      <div style="display:flex; gap:10px; align-items:center;">
-        <button class="metrics-btn" id="metrics-btn">
-          📊 Métricas
-        </button>
-        <div class="profile-pill" id="profile-pill">
-          <div class="avatar" id="profile-avatar">--</div>
-          <div>
-            <span class="name" id="profile-name">Sin nombre</span>
-            <span class="hint">Tocar para cambiar</span>
-          </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+      <div class="profile-pill" id="profile-pill">
+        <div class="avatar" id="profile-avatar">--</div>
+        <div>
+          <span class="name" id="profile-name">Sin nombre</span>
+          <span class="hint">Tocar para cambiar</span>
         </div>
       </div>
       <div class="sync-note" id="sync-note">Sincronizando…</div>
     </div>
+  </div>
 
   <div class="board" id="board"></div>
 
   <footer>Este tablero se guarda en Supabase y lo ven todas las personas que abran este mismo enlace.</footer>
 </div>
 
-<!-- Modal del panel de monitoreo de participación -->
-<div class="modal-overlay hidden" id="metrics-modal">
-  <div class="modal" style="max-width: 440px;">
-    <h2>Métricas del Equipo</h2>
-    <p>Monitoreo de participación y avance individual.</p>
-    
-    <div class="metrics-list" id="metrics-list">
-      <!-- Las métricas se inyectarán aquí desde JavaScript -->
-    </div>
-    
-    <div class="modal-actions" style="margin-top: 24px;">
-      <button class="btn-primary" id="metrics-close">Cerrar panel</button>
+<div class="modal-overlay hidden" id="profile-modal">
+  <div class="modal">
+    <h2>¿Cómo te llamas?</h2>
+    <p>No necesitas cuenta ni contraseña. Tu nombre solo se guarda en este navegador y se usa para identificar tus tarjetas.</p>
+    <input type="text" id="profile-input" maxlength="30" placeholder="Tu nombre">
+    <div class="modal-actions">
+      <button class="btn-primary" id="profile-save" disabled>Entrar al tablero</button>
     </div>
   </div>
 </div>
@@ -405,15 +371,17 @@
     if(error){ setSyncNote('Error al cargar'); console.error(error); return []; }
     return data;
   }
+  
+  // Inserta una nueva tarea en la base de datos
   async function addTask(columnId, text){
     const { error } = await sb.from('tasks').insert({
       text, column_id: columnId, author: null
     });
     if(error){ setSyncNote('No se pudo guardar'); console.error(error); }
   }
+  
+  // Actualiza la columna de la tarea y le asigna el autor si sale de "Por hacer"
   async function moveTask(id, columnId){
-    // Al mover una tarjeta fuera de "Por hacer", queda asignada a quien la mueve.
-    // Si se regresa a "Por hacer", vuelve a quedar sin asignar.
     const updates = {
       column_id: columnId,
       author: columnId === 'todo' ? null : profile.name
@@ -421,10 +389,12 @@
     const { error } = await sb.from('tasks').update(updates).eq('id', id);
     if(error){ setSyncNote('No se pudo mover'); console.error(error); }
   }
+  
   async function deleteTask(id){
     const { error } = await sb.from('tasks').delete().eq('id', id);
     if(error){ setSyncNote('No se pudo eliminar'); console.error(error); }
   }
+  
   async function updateTaskText(id, text){
     const { error } = await sb.from('tasks').update({ text }).eq('id', id);
     if(error){ setSyncNote('No se pudo editar'); console.error(error); }
@@ -435,6 +405,7 @@
     const board = document.getElementById('board');
     board.innerHTML = '';
 
+    // Renderizamos las 3 columnas principales de Kanban
     COLUMN_DEFS.forEach(col => {
       const colTasks = tasks.filter(t => t.column_id === col.id);
 
@@ -480,12 +451,14 @@
       `;
       const textarea = addRow.querySelector('textarea');
       const addBtn = addRow.querySelector('button');
+      
       const submit = () => {
         const text = textarea.value.trim();
         if(!text) return;
         addTask(col.id, text);
         textarea.value = '';
       };
+      
       addBtn.addEventListener('click', submit);
       textarea.addEventListener('keydown', (e) => {
         if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submit(); }
@@ -494,42 +467,36 @@
 
       board.appendChild(colEl);
     });
+    
+    // Renderizamos la cuarta columna con las métricas analíticas
+    board.appendChild(createMetricsPanel());
   }
 
+  // Genera el HTML de una tarjeta individual
   function renderCard(task){
     const card = document.createElement('div');
     const isDone = task.column_id === 'done';
     
-    // Asignamos la clase base y le sumamos un modificador si está terminada
     card.className = 'card' + (isDone ? ' card--done' : '');
     card.draggable = true;
     card.dataset.id = task.id;
 
     let tapeHtml = '';
     
-    // Verificamos si la tarjeta está en la columna "Hecho"
+    // Si la tarjeta está lista, aplicamos la cinta verde exigida. Si no, usa el color del autor.
     if (isDone) {
-      // Usamos la clase "tape" para mantener el estilo, pero forzamos el color #369C35 y el texto "Hecho"
-      // Se agregó color:#ffffff para que el texto blanco resalte mejor sobre el fondo verde
       tapeHtml = `<div class="tape" style="background:#369C35; color:#ffffff;">Hecho</div>`;
     } else {
-      // Obtenemos el color aleatorio para el autor, o un tono gris si no hay nadie asignado
       const tapeColor = task.author ? colorForName(task.author) : 'rgba(255,255,255,.28)';
-      
-      // Construimos la cinta estándar inyectando el nombre del autor si existe
       tapeHtml = task.author
         ? `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.author)}</div>`
         : `<div class="tape" style="background:${tapeColor}"></div>`;
     }
 
-    // Registramos los eventos para el arrastrar y soltar (drag and drop)
     card.addEventListener('dragstart', () => { draggingId = task.id; card.classList.add('dragging'); });
     card.addEventListener('dragend', () => { card.classList.remove('dragging'); draggingId = null; });
 
     const menuId = 'menu-' + task.id;
-    
-    // Construimos la estructura interna de la tarjeta
-    // Nota que eliminamos la línea que inyectaba el div "ribbon"
     card.innerHTML = `
       ${tapeHtml}
       <div class="card-actions" style="position:absolute; top:8px; right:6px;">
@@ -549,7 +516,6 @@
       </div>
     `;
     
-    // Inyectamos el texto de la tarea usando textContent para evitar inyección de código (XSS)
     card.querySelector('.card-text').textContent = task.text;
 
     const menuBtn = card.querySelector('.menu-btn');
@@ -559,6 +525,7 @@
       document.querySelectorAll('.menu.open').forEach(m => { if(m !== menu) m.classList.remove('open'); });
       menu.classList.toggle('open');
     });
+    
     menu.querySelectorAll('[data-move]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -566,11 +533,13 @@
         menu.classList.remove('open');
       });
     });
+    
     menu.querySelector('[data-edit]').addEventListener('click', (e) => {
       e.stopPropagation();
       menu.classList.remove('open');
       startEdit(card, task);
     });
+    
     menu.querySelector('[data-delete]').addEventListener('click', (e) => {
       e.stopPropagation();
       deleteTask(task.id);
@@ -580,6 +549,7 @@
     return card;
   }
 
+  // Activa el modo de edición de texto directamente dentro de la tarjeta
   function startEdit(card, task){
     const textEl = card.querySelector('.card-text');
     card.draggable = false;
@@ -593,6 +563,7 @@
         <button class="edit-save">Guardar</button>
       </div>
     `;
+    
     const textarea = wrapper.querySelector('textarea');
     textarea.value = task.text;
     textEl.replaceWith(wrapper);
@@ -603,12 +574,14 @@
       e.stopPropagation();
       render();
     });
+    
     wrapper.querySelector('.edit-save').addEventListener('click', (e) => {
       e.stopPropagation();
       const newText = textarea.value.trim();
       if(!newText) return;
       updateTaskText(task.id, newText);
     });
+    
     textarea.addEventListener('keydown', (e) => {
       e.stopPropagation();
       if(e.key === 'Enter' && !e.shiftKey){
@@ -617,6 +590,77 @@
       }
       if(e.key === 'Escape'){ render(); }
     });
+  }
+  
+  // Crea el elemento DOM para la cuarta columna con las analíticas del equipo
+  function createMetricsPanel(){
+    const colEl = document.createElement('div');
+    colEl.className = 'column metrics-column';
+    
+    const head = document.createElement('div');
+    head.className = 'column-head';
+    head.innerHTML = `
+      <span class="column-dot" style="background:var(--white)"></span>
+      <span class="column-title">Participación</span>
+    `;
+    colEl.appendChild(head);
+
+    const listEl = document.createElement('div');
+    listEl.className = 'cards';
+    
+    // Objeto para acumular el conteo de las métricas requeridas
+    const stats = {};
+    
+    tasks.forEach(t => {
+      if (!t.author) return; 
+      
+      if (!stats[t.author]) {
+        stats[t.author] = { done: 0, pending: 0 };
+      }
+      
+      if (t.column_id === 'done') {
+        stats[t.author].done++;
+      } else if (t.column_id === 'doing') {
+        stats[t.author].pending++;
+      }
+    });
+
+    const authors = Object.keys(stats);
+    
+    if (authors.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-hint';
+      empty.textContent = 'Asigna tarjetas para ver las métricas.';
+      listEl.appendChild(empty);
+    } else {
+      // Recorremos los datos para imprimir el progreso de cada estudiante
+      authors.forEach(author => {
+        const data = stats[author];
+        const total = data.done + data.pending;
+        const percent = total === 0 ? 0 : Math.round((data.done / total) * 100);
+        
+        const item = document.createElement('div');
+        item.className = 'metric-item';
+        item.innerHTML = `
+          <div class="metric-name">
+            <span class="column-dot" style="background:${colorForName(author)}"></span>
+            ${escapeHtml(author)}
+          </div>
+          <div class="metric-stats">
+            <div class="metric-stat"><span>${data.done}</span> listas</div>
+            <div class="metric-stat"><span>${data.pending}</span> pend.</div>
+            <div class="metric-stat" style="margin-left:auto;"><span>${percent}%</span></div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${percent}%;"></div>
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+    
+    colEl.appendChild(listEl);
+    return colEl;
   }
 
   document.addEventListener('click', () => {
@@ -664,81 +708,12 @@
     saveProfile(profile);
     applyProfilePill();
     closeProfileModal();
+    render(); // Refrescamos para reasignar tareas si el nombre cambia
   });
   document.getElementById('profile-pill').addEventListener('click', () => {
     openProfileModal(profile ? profile.name : '');
   });
-  
-// ---------- Panel de Monitoreo (Métricas) ----------
-  
-  // Calcula y renderiza el avance de cada integrante
-  function openMetricsModal() {
-    const list = document.getElementById('metrics-list');
-    list.innerHTML = '';
-    
-    // Objeto para agrupar y contar las tareas por autor
-    const stats = {};
-    
-    tasks.forEach(t => {
-      // Ignoramos las tareas sin autor (las que están en "Por hacer")
-      if (!t.author) return; 
-      
-      // Inicializamos contadores para un nuevo autor
-      if (!stats[t.author]) {
-        stats[t.author] = { done: 0, pending: 0 };
-      }
-      
-      // Clasificamos según la columna
-      if (t.column_id === 'done') {
-        stats[t.author].done++;
-      } else if (t.column_id === 'doing') {
-        stats[t.author].pending++;
-      }
-    });
 
-    const authors = Object.keys(stats);
-    
-    // Mostramos un mensaje si nadie ha tomado tareas aún
-    if (authors.length === 0) {
-      list.innerHTML = '<div class="empty-hint" style="color:var(--ink-soft)">No hay tareas asignadas aún. Mueve una tarea para empezar.</div>';
-    } else {
-      // Iteramos sobre cada autor para construir su tarjeta de métricas
-      authors.forEach(author => {
-        const data = stats[author];
-        const total = data.done + data.pending;
-        
-        // Calculamos el porcentaje, previniendo la división por cero
-        const percent = total === 0 ? 0 : Math.round((data.done / total) * 100);
-        
-        const item = document.createElement('div');
-        item.className = 'metric-item';
-        item.innerHTML = `
-          <div class="metric-name">
-            <span class="column-dot" style="background:${colorForName(author)}"></span>
-            ${escapeHtml(author)}
-          </div>
-          <div class="metric-stats">
-            <div class="metric-stat"><span>${data.done}</span> completadas</div>
-            <div class="metric-stat"><span>${data.pending}</span> pendientes</div>
-            <div class="metric-stat" style="margin-left:auto;"><span>${percent}%</span> avance</div>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: ${percent}%;"></div>
-          </div>
-        `;
-        list.appendChild(item);
-      });
-    }
-
-    document.getElementById('metrics-modal').classList.remove('hidden');
-  }
-
-  // Eventos para abrir y cerrar el modal de métricas
-  document.getElementById('metrics-close').addEventListener('click', () => {
-    document.getElementById('metrics-modal').classList.add('hidden');
-  });
-  document.getElementById('metrics-btn').addEventListener('click', openMetricsModal);
-  
   // ---------- Realtime ----------
   function subscribeRealtime(){
     sb.channel('tasks-changes')
@@ -753,7 +728,6 @@
   // ---------- Boot ----------
   async function boot(){
     profile = loadProfile();
-
     tasks = await fetchTasks();
 
     document.getElementById('loading-screen').classList.add('hidden');

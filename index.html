@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Tablero EquiTeam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#1f3a34;
+    --card:#f6efe1;
+    --card-line:#e3d6b8;
+    --ink:#24302b;
+    --ink-soft:#5c6a62;
+    --muted:#9fb3ac;
+    --white:#fdf9f0;
+    --todo:#d9a441;
+    --doing:#5b87a6;
+    --done:#7fa65b;
+    --danger:#c0563f;
+    --shadow:0 6px 16px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, rgba(255,255,255,.04), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--white);
+    font-family:'Work Sans',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size:14px 14px;
+    pointer-events:none;
+    z-index:0;
+  }
+  #app{position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:20px 20px 60px;}
+
+  .board-header{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    gap:16px; flex-wrap:wrap;
+    padding:18px 4px 22px;
+    border-bottom:1px dashed rgba(255,255,255,.18);
+    margin-bottom:26px;
+  }
+  .eyebrow{
+    display:block; font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--todo); font-weight:600; margin-bottom:4px;
+  }
+  h1{
+    font-family:'Fraunces',serif; font-weight:600; font-size:clamp(28px,4vw,40px);
+    margin:0; color:var(--white); letter-spacing:-.01em;
+  }
+  .subtitle{color:var(--muted); font-size:14px; margin-top:6px;}
+
+  .profile-pill{
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14);
+    padding:7px 14px 7px 7px; border-radius:999px;
+    cursor:pointer; transition:background .15s ease;
+  }
+  .profile-pill:hover{background:rgba(255,255,255,.11);}
+  .avatar{
+    width:34px; height:34px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:700; font-size:14px; color:#20140c;
+    flex-shrink:0;
+  }
+  .profile-pill .name{font-size:14px; font-weight:600;}
+  .profile-pill .hint{font-size:11px; color:var(--muted); display:block; margin-top:-2px;}
+
+  .sync-note{font-size:12px; color:var(--muted); text-align:right; margin-top:2px;}
+
+  .board{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  @media (max-width:820px){ .board{grid-template-columns:1fr;} }
+
+  .column{
+    background:rgba(0,0,0,.14);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;
+    padding:14px;
+    min-height:200px;
+    display:flex; flex-direction:column;
+  }
+  .column.drag-over{outline:2px dashed rgba(255,255,255,.5); outline-offset:2px;}
+  .column-head{display:flex; align-items:center; gap:9px; margin-bottom:12px; padding:0 2px;}
+  .column-dot{width:10px; height:10px; border-radius:50%;}
+  .column-title{font-family:'Fraunces',serif; font-weight:600; font-size:17px; flex:1;}
+  .column-count{
+    font-size:12px; color:var(--muted); background:rgba(255,255,255,.07);
+    padding:2px 9px; border-radius:999px;
+  }
+
+  .cards{display:flex; flex-direction:column; gap:10px; min-height:40px; flex:1;}
+
+  .card{
+    background:var(--card); color:var(--ink); border-radius:10px;
+    padding:13px 13px 10px; box-shadow:var(--shadow); position:relative;
+    cursor:grab; border:1px solid var(--card-line);
+  }
+  .card:active{cursor:grabbing;}
+  .card.dragging{opacity:.35;}
+  .tape{
+    position:absolute; top:-8px; left:16px; width:46px; height:16px;
+    border-radius:2px; opacity:.9; transform:rotate(-3deg);
+    box-shadow:0 2px 3px rgba(0,0,0,.2);
+  }
+  .card-text{font-size:14.5px; line-height:1.4; margin:6px 0 10px; word-break:break-word; white-space:pre-wrap;}
+  .card-meta{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .card-who{display:flex; align-items:center; gap:6px;}
+  .mini-avatar{
+    width:20px; height:20px; border-radius:50%; font-size:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:700; color:#20140c;
+  }
+  .card-who-name{font-size:11.5px; color:var(--ink-soft); font-weight:600;}
+  .card-time{font-size:10.5px; color:var(--ink-soft);}
+
+  .card-actions{position:relative;}
+  .menu-btn{
+    background:none; border:none; color:var(--ink-soft); cursor:pointer;
+    font-size:16px; padding:2px 6px; border-radius:6px; line-height:1;
+  }
+  .menu-btn:hover{background:rgba(0,0,0,.06);}
+  .menu{
+    position:absolute; right:0; top:22px; background:var(--white);
+    border:1px solid var(--card-line); border-radius:10px; box-shadow:var(--shadow);
+    min-width:170px; z-index:5; overflow:hidden; display:none;
+  }
+  .menu.open{display:block;}
+  .menu button{
+    display:block; width:100%; text-align:left; background:none; border:none;
+    padding:9px 12px; font-size:13px; color:var(--ink); cursor:pointer; font-family:inherit;
+  }
+  .menu button:hover{background:rgba(0,0,0,.05);}
+  .menu button.danger{color:var(--danger);}
+  .menu .menu-label{
+    padding:8px 12px 4px; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--muted);
+  }
+
+  .add-row{margin-top:12px;}
+  .add-input{
+    width:100%; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16);
+    color:var(--white); border-radius:9px; padding:9px 11px; font-size:13.5px;
+    font-family:inherit; resize:none;
+  }
+  .add-input::placeholder{color:rgba(255,255,255,.4);}
+  .add-input:focus{outline:none; border-color:rgba(255,255,255,.4);}
+  .add-btn{
+    margin-top:7px; width:100%; padding:8px; border-radius:9px; border:none;
+    font-family:inherit; font-weight:600; font-size:13px; cursor:pointer;
+    background:rgba(255,255,255,.14); color:var(--white); transition:background .15s;
+  }
+  .add-btn:hover{background:rgba(255,255,255,.22);}
+
+  .empty-hint{
+    color:var(--muted); font-size:12.5px; text-align:center; padding:14px 4px;
+    border:1px dashed rgba(255,255,255,.16); border-radius:10px;
+  }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(10,18,16,.72);
+    display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-overlay.hidden{display:none;}
+  .modal{
+    background:var(--card); color:var(--ink); border-radius:16px; padding:26px;
+    width:100%; max-width:360px; box-shadow:var(--shadow);
+  }
+  .modal h2{font-family:'Fraunces',serif; margin:0 0 6px; font-size:22px;}
+  .modal p{font-size:13.5px; color:var(--ink-soft); margin:0 0 16px; line-height:1.5;}
+  .modal input{
+    width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--card-line);
+    font-family:inherit; font-size:14.5px; margin-bottom:14px;
+  }
+  .modal input:focus{outline:2px solid var(--doing); outline-offset:1px;}
+  .modal-actions{display:flex; gap:8px;}
+  .btn-primary{
+    flex:1; padding:11px; border-radius:9px; border:none; background:var(--ink);
+    color:var(--white); font-weight:600; font-size:14px; cursor:pointer; font-family:inherit;
+  }
+  .btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+
+  .loading-screen{
+    position:fixed; inset:0; background:var(--bg); display:flex; align-items:center;
+    justify-content:center; flex-direction:column; gap:10px; z-index:100; color:var(--muted);
+    font-size:13px;
+  }
+  .loading-screen.hidden{display:none;}
+  .spinner{
+    width:28px; height:28px; border-radius:50%; border:3px solid rgba(255,255,255,.15);
+    border-top-color:var(--todo); animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion:reduce){ .spinner{animation:none;} }
+
+  .config-warning{
+    position:fixed; inset:0; background:var(--bg); z-index:200; display:flex;
+    align-items:center; justify-content:center; padding:30px; text-align:center;
+  }
+  .config-warning.hidden{display:none;}
+  .config-warning .box{max-width:440px;}
+  .config-warning h2{font-family:'Fraunces',serif; margin-bottom:10px;}
+  .config-warning code{background:rgba(255,255,255,.1); padding:2px 6px; border-radius:5px;}
+  .config-warning p{color:var(--muted); line-height:1.6; font-size:14px;}
+
+  footer{text-align:center; color:var(--muted); font-size:11.5px; margin-top:34px; opacity:.7;}
+</style>
+</head>
+<body>
+
+<!-- ⚠️ PASO OBLIGATORIO: reemplaza estos dos valores con los de tu proyecto Supabase -->
+<!-- Project Settings → API → Project URL / anon public key -->
+<script>
+  const SUPABASE_URL = 'https://dasrrzlyfzoqdtlvbdbt.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_QYmfscKalC7yPA77LiwBgg_iY6FE1_P';
+</script>
+
+<div class="config-warning hidden" id="config-warning">
+  <div class="box">
+    <h2>Falta configurar Supabase</h2>
+    <p>Abre este archivo y reemplaza <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code> con los valores de tu proyecto (Project Settings → API en Supabase). Luego vuelve a subir el archivo a GitHub.</p>
+  </div>
+</div>
+
+<div class="loading-screen" id="loading-screen">
+  <div class="spinner"></div>
+  <div>Cargando el tablero…</div>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="board-header">
+    <div>
+      <span class="eyebrow">EquiTeam</span>
+      <h1>Tablero del equipo</h1>
+      <div class="subtitle">Arrastra las tarjetas o usa el menú «⋯» para moverlas de columna.</div>
+    </div>
+    <div>
+      <div class="profile-pill" id="profile-pill">
+        <div class="avatar" id="profile-avatar">--</div>
+        <div>
+          <span class="name" id="profile-name">Sin nombre</span>
+          <span class="hint">Tocar para cambiar</span>
+        </div>
+      </div>
+      <div class="sync-note" id="sync-note">Sincronizando…</div>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <footer>Este tablero se guarda en Supabase y lo ven todas las personas que abran este mismo enlace.</footer>
+</div>
+
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal">
+    <h2>¿Cómo te llamas?</h2>
+    <p>No necesitas cuenta ni contraseña. Tu nombre solo se guarda en este navegador y se usa para identificar tus tarjetas.</p>
+    <input type="text" id="profile-input" maxlength="30" placeholder="Tu nombre">
+    <div class="modal-actions">
+      <button class="btn-primary" id="profile-save" disabled>Entrar al tablero</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  if(!SUPABASE_URL || SUPABASE_URL.includes('PEGA_AQUI') || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('PEGA_AQUI')){
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('config-warning').classList.remove('hidden');
+    return;
+  }
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const PROFILE_KEY = 'equiteam-profile';
+
+  const COLUMN_DEFS = [
+    {id:'todo',  title:'Por hacer',    accent:'var(--todo)'},
+    {id:'doing', title:'En progreso',  accent:'var(--doing)'},
+    {id:'done',  title:'Hecho',        accent:'var(--done)'}
+  ];
+  const TAPE_PALETTE = ['#d9a441','#5b87a6','#7fa65b','#c0563f','#8a6fb0','#4f9d8a','#c77b9a'];
+
+  let tasks = [];
+  let profile = null;
+  let draggingId = null;
+
+  function colorForName(name){
+    let hash = 0;
+    for(let i=0;i<name.length;i++){ hash = name.charCodeAt(i) + ((hash<<5)-hash); }
+    return TAPE_PALETTE[Math.abs(hash) % TAPE_PALETTE.length];
+  }
+  function initials(name){
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if(parts.length === 0) return '--';
+    if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  function timeAgo(iso){
+    const s = Math.floor((Date.now() - new Date(iso).getTime())/1000);
+    if(s < 60) return 'justo ahora';
+    const m = Math.floor(s/60);
+    if(m < 60) return 'hace ' + m + ' min';
+    const h = Math.floor(m/60);
+    if(h < 24) return 'hace ' + h + ' h';
+    return 'hace ' + Math.floor(h/24) + ' d';
+  }
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function setSyncNote(text){
+    const el = document.getElementById('sync-note');
+    if(el) el.textContent = text;
+  }
+
+  // ---------- Data layer (Supabase) ----------
+  async function fetchTasks(){
+    const { data, error } = await sb.from('tasks').select('*').order('created_at', {ascending:true});
+    if(error){ setSyncNote('Error al cargar'); console.error(error); return []; }
+    return data;
+  }
+  async function addTask(columnId, text){
+    const { error } = await sb.from('tasks').insert({
+      text, column_id: columnId, author: profile.name
+    });
+    if(error){ setSyncNote('No se pudo guardar'); console.error(error); }
+  }
+  async function moveTask(id, columnId){
+    const { error } = await sb.from('tasks').update({ column_id: columnId }).eq('id', id);
+    if(error){ setSyncNote('No se pudo mover'); console.error(error); }
+  }
+  async function deleteTask(id){
+    const { error } = await sb.from('tasks').delete().eq('id', id);
+    if(error){ setSyncNote('No se pudo eliminar'); console.error(error); }
+  }
+
+  // ---------- Rendering ----------
+  function render(){
+    const board = document.getElementById('board');
+    board.innerHTML = '';
+
+    COLUMN_DEFS.forEach(col => {
+      const colTasks = tasks.filter(t => t.column_id === col.id);
+
+      const colEl = document.createElement('div');
+      colEl.className = 'column';
+      colEl.dataset.columnId = col.id;
+
+      colEl.addEventListener('dragover', (e) => { e.preventDefault(); colEl.classList.add('drag-over'); });
+      colEl.addEventListener('dragleave', () => colEl.classList.remove('drag-over'));
+      colEl.addEventListener('drop', (e) => {
+        e.preventDefault();
+        colEl.classList.remove('drag-over');
+        if(draggingId) moveTask(draggingId, col.id);
+      });
+
+      const head = document.createElement('div');
+      head.className = 'column-head';
+      head.innerHTML = `
+        <span class="column-dot" style="background:${col.accent}"></span>
+        <span class="column-title">${col.title}</span>
+        <span class="column-count">${colTasks.length}</span>
+      `;
+      colEl.appendChild(head);
+
+      const cardsEl = document.createElement('div');
+      cardsEl.className = 'cards';
+
+      if(colTasks.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'empty-hint';
+        empty.textContent = 'Sin tarjetas todavía';
+        cardsEl.appendChild(empty);
+      }
+
+      colTasks.forEach(task => cardsEl.appendChild(renderCard(task)));
+      colEl.appendChild(cardsEl);
+
+      const addRow = document.createElement('div');
+      addRow.className = 'add-row';
+      addRow.innerHTML = `
+        <textarea class="add-input" rows="2" placeholder="Escribe una tarea y presiona Agregar…"></textarea>
+        <button class="add-btn">+ Agregar tarjeta</button>
+      `;
+      const textarea = addRow.querySelector('textarea');
+      const addBtn = addRow.querySelector('button');
+      const submit = () => {
+        const text = textarea.value.trim();
+        if(!text) return;
+        addTask(col.id, text);
+        textarea.value = '';
+      };
+      addBtn.addEventListener('click', submit);
+      textarea.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submit(); }
+      });
+      colEl.appendChild(addRow);
+
+      board.appendChild(colEl);
+    });
+  }
+
+  function renderCard(task){
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.draggable = true;
+    card.dataset.id = task.id;
+
+    const tapeColor = colorForName(task.author || '?');
+
+    card.addEventListener('dragstart', () => { draggingId = task.id; card.classList.add('dragging'); });
+    card.addEventListener('dragend', () => { card.classList.remove('dragging'); draggingId = null; });
+
+    const menuId = 'menu-' + task.id;
+    card.innerHTML = `
+      <div class="tape" style="background:${tapeColor}"></div>
+      <div class="card-actions" style="position:absolute; top:8px; right:6px;">
+        <button class="menu-btn" data-open="${menuId}">⋯</button>
+        <div class="menu" id="${menuId}">
+          <div class="menu-label">Mover a</div>
+          ${COLUMN_DEFS.filter(c => c.id !== task.column_id).map(c =>
+            `<button data-move="${c.id}">${c.title}</button>`).join('')}
+          <div class="menu-label">Otras acciones</div>
+          <button class="danger" data-delete="1">Eliminar tarjeta</button>
+        </div>
+      </div>
+      <div class="card-text"></div>
+      <div class="card-meta">
+        <div class="card-who">
+          <div class="mini-avatar" style="background:${tapeColor}">${initials(task.author || '?')}</div>
+          <span class="card-who-name">${escapeHtml(task.author || 'Sin nombre')}</span>
+        </div>
+        <span class="card-time">${timeAgo(task.created_at)}</span>
+      </div>
+    `;
+    card.querySelector('.card-text').textContent = task.text;
+
+    const menuBtn = card.querySelector('.menu-btn');
+    const menu = card.querySelector('.menu');
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.menu.open').forEach(m => { if(m !== menu) m.classList.remove('open'); });
+      menu.classList.toggle('open');
+    });
+    menu.querySelectorAll('[data-move]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moveTask(task.id, btn.dataset.move);
+        menu.classList.remove('open');
+      });
+    });
+    menu.querySelector('[data-delete]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteTask(task.id);
+      menu.classList.remove('open');
+    });
+
+    return card;
+  }
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
+  });
+
+  // ---------- Profile (localStorage: solo vive en este navegador) ----------
+  function loadProfile(){
+    try{
+      const raw = localStorage.getItem(PROFILE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function saveProfile(p){
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+  }
+  function applyProfilePill(){
+    document.getElementById('profile-name').textContent = profile.name;
+    document.getElementById('profile-avatar').textContent = initials(profile.name);
+    document.getElementById('profile-avatar').style.background = colorForName(profile.name);
+  }
+  function openProfileModal(prefill){
+    const overlay = document.getElementById('profile-modal');
+    const input = document.getElementById('profile-input');
+    const saveBtn = document.getElementById('profile-save');
+    input.value = prefill || '';
+    saveBtn.disabled = !input.value.trim();
+    overlay.classList.remove('hidden');
+    setTimeout(() => input.focus(), 50);
+  }
+  function closeProfileModal(){
+    document.getElementById('profile-modal').classList.add('hidden');
+  }
+
+  document.getElementById('profile-input').addEventListener('input', (e) => {
+    document.getElementById('profile-save').disabled = !e.target.value.trim();
+  });
+  document.getElementById('profile-input').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && e.target.value.trim()) document.getElementById('profile-save').click();
+  });
+  document.getElementById('profile-save').addEventListener('click', () => {
+    const name = document.getElementById('profile-input').value.trim();
+    if(!name) return;
+    profile = { name };
+    saveProfile(profile);
+    applyProfilePill();
+    closeProfileModal();
+  });
+  document.getElementById('profile-pill').addEventListener('click', () => {
+    openProfileModal(profile ? profile.name : '');
+  });
+
+  // ---------- Realtime ----------
+  function subscribeRealtime(){
+    sb.channel('tasks-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, async () => {
+        tasks = await fetchTasks();
+        render();
+        setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
+      })
+      .subscribe();
+  }
+
+  // ---------- Boot ----------
+  async function boot(){
+    profile = loadProfile();
+
+    tasks = await fetchTasks();
+
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('app').style.display = 'block';
+
+    if(profile && profile.name){
+      applyProfilePill();
+    } else {
+      openProfileModal('');
+    }
+
+    render();
+    setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
+    subscribeRealtime();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

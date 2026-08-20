@@ -240,12 +240,50 @@
   .config-warning p{color:var(--muted); line-height:1.6; font-size:14px;}
 
   footer{text-align:center; color:var(--muted); font-size:11.5px; margin-top:34px; opacity:.7;}
+  
+  /* =========================================
+     Estilos para el botón y modal de Métricas
+     ========================================= */
+  
+  /* Botón de métricas con el mismo estilo translúcido del perfil */
+  .metrics-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.14);
+    padding: 7px 14px; 
+    border-radius: 999px;
+    color: var(--white); 
+    cursor: pointer;
+    font-family: inherit; 
+    font-size: 13px; 
+    font-weight: 600;
+    display: flex; 
+    align-items: center; 
+    gap: 6px;
+    transition: background .15s ease;
+  }
+  .metrics-btn:hover { background: rgba(255,255,255,.11); }
+  
+  /* Contenedor de la lista de métricas dentro del modal */
+  .metrics-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+  
+  /* Tarjeta individual para cada estudiante en el modal */
+  .metric-item { 
+    background: rgba(0,0,0,.03); 
+    border: 1px solid var(--card-line); 
+    padding: 14px; 
+    border-radius: 12px; 
+  }
+  .metric-name { font-weight: 600; font-size: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .metric-stats { display: flex; gap: 12px; font-size: 13px; color: var(--ink-soft); }
+  .metric-stat span { font-weight: 700; color: var(--ink); }
+  
+  /* Barra de progreso visual para el porcentaje de avance */
+  .progress-bar { height: 6px; background: rgba(0,0,0,.08); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--done); border-radius: 3px; transition: width 0.3s ease; }
 </style>
 </head>
 <body>
-
-<!-- ⚠️ PASO OBLIGATORIO: reemplaza estos dos valores con los de tu proyecto Supabase -->
-<!-- Project Settings → API → Project URL / anon public key -->
+  
 <script>
   const SUPABASE_URL = 'https://dasrrzlyfzoqdtlvbdbt.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_QYmfscKalC7yPA77LiwBgg_iY6FE1_P';

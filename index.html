@@ -352,6 +352,10 @@
     const { error } = await sb.from('tasks').delete().eq('id', id);
     if(error){ setSyncNote('No se pudo eliminar'); console.error(error); }
   }
+  async function updateTaskText(id, text){
+    const { error } = await sb.from('tasks').update({ text }).eq('id', id);
+    if(error){ setSyncNote('No se pudo editar'); console.error(error); }
+  }
 
   // ---------- Rendering ----------
   function render(){
@@ -440,6 +444,7 @@
           ${COLUMN_DEFS.filter(c => c.id !== task.column_id).map(c =>
             `<button data-move="${c.id}">${c.title}</button>`).join('')}
           <div class="menu-label">Otras acciones</div>
+          <button data-edit="1">Editar tarjeta</button>
           <button class="danger" data-delete="1">Eliminar tarjeta</button>
         </div>
       </div>
@@ -470,6 +475,11 @@
         menu.classList.remove('open');
       });
     });
+    menu.querySelector('[data-edit]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.classList.remove('open');
+      startEdit(card, task);
+    });
     menu.querySelector('[data-delete]').addEventListener('click', (e) => {
       e.stopPropagation();
       deleteTask(task.id);
@@ -477,6 +487,45 @@
     });
 
     return card;
+  }
+
+  function startEdit(card, task){
+    const textEl = card.querySelector('.card-text');
+    card.draggable = false;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'edit-wrapper';
+    wrapper.innerHTML = `
+      <textarea class="edit-textarea" rows="3"></textarea>
+      <div class="edit-actions">
+        <button class="edit-cancel">Cancelar</button>
+        <button class="edit-save">Guardar</button>
+      </div>
+    `;
+    const textarea = wrapper.querySelector('textarea');
+    textarea.value = task.text;
+    textEl.replaceWith(wrapper);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    wrapper.querySelector('.edit-cancel').addEventListener('click', (e) => {
+      e.stopPropagation();
+      render();
+    });
+    wrapper.querySelector('.edit-save').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const newText = textarea.value.trim();
+      if(!newText) return;
+      updateTaskText(task.id, newText);
+    });
+    textarea.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        wrapper.querySelector('.edit-save').click();
+      }
+      if(e.key === 'Escape'){ render(); }
+    });
   }
 
   document.addEventListener('click', () => {

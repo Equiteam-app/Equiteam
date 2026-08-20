@@ -450,26 +450,43 @@
   function renderCard(task){
     const card = document.createElement('div');
     const isDone = task.column_id === 'done';
+    
+    // Asignamos la clase base y le sumamos un modificador si está terminada
     card.className = 'card' + (isDone ? ' card--done' : '');
     card.draggable = true;
     card.dataset.id = task.id;
 
-    const tapeColor = task.author ? colorForName(task.author) : 'rgba(255,255,255,.28)';
-    const tapeHtml = isDone ? '' :
-      (task.author
+    let tapeHtml = '';
+    
+    // Verificamos si la tarjeta está en la columna "Hecho"
+    if (isDone) {
+      // Usamos la clase "tape" para mantener el estilo, pero forzamos el color #369C35 y el texto "Hecho"
+      // Se agregó color:#ffffff para que el texto blanco resalte mejor sobre el fondo verde
+      tapeHtml = `<div class="tape" style="background:#369C35; color:#ffffff;">Hecho</div>`;
+    } else {
+      // Obtenemos el color aleatorio para el autor, o un tono gris si no hay nadie asignado
+      const tapeColor = task.author ? colorForName(task.author) : 'rgba(255,255,255,.28)';
+      
+      // Construimos la cinta estándar inyectando el nombre del autor si existe
+      tapeHtml = task.author
         ? `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.author)}</div>`
-        : `<div class="tape" style="background:${tapeColor}"></div>`);
+        : `<div class="tape" style="background:${tapeColor}"></div>`;
+    }
 
+    // Registramos los eventos para el arrastrar y soltar (drag and drop)
     card.addEventListener('dragstart', () => { draggingId = task.id; card.classList.add('dragging'); });
     card.addEventListener('dragend', () => { card.classList.remove('dragging'); draggingId = null; });
 
     const menuId = 'menu-' + task.id;
+    
+    // Construimos la estructura interna de la tarjeta
+    // Nota que eliminamos la línea que inyectaba el div "ribbon"
     card.innerHTML = `
       ${tapeHtml}
-      <!-- Operador ternario: si isDone es verdadero, inyecta el HTML del listón. -->
-      <!-- Cambia el texto "¡Hecho!" aquí abajo por lo que prefieras (ej. "¡Listo!", "Aprobado") -->
-        ${isDone ? '<div class="ribbon">¡Hecho!</div>' : ''}
-        <div class="card-actions" style="position:absolute; top:8px; right:6px;">
+      <div class="card-actions" style="position:absolute; top:8px; right:6px;">
+        <button class="menu-btn" data-open="${menuId}">⋯</button>
+        <div class="menu" id="${menuId}">
+          <div class="menu-label">Mover a</div>
           ${COLUMN_DEFS.filter(c => c.id !== task.column_id).map(c =>
             `<button data-move="${c.id}">${c.title}</button>`).join('')}
           <div class="menu-label">Otras acciones</div>
@@ -482,6 +499,8 @@
         <span class="card-time">${timeAgo(task.created_at)}</span>
       </div>
     `;
+    
+    // Inyectamos el texto de la tarea usando textContent para evitar inyección de código (XSS)
     card.querySelector('.card-text').textContent = task.text;
 
     const menuBtn = card.querySelector('.menu-btn');

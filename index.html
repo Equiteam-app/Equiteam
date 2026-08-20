@@ -309,16 +309,22 @@
       <div class="subtitle">Arrastra las tarjetas o usa el menú «⋯» para moverlas de columna.</div>
     </div>
     <div>
-      <div class="profile-pill" id="profile-pill">
-        <div class="avatar" id="profile-avatar">--</div>
-        <div>
-          <span class="name" id="profile-name">Sin nombre</span>
-          <span class="hint">Tocar para cambiar</span>
+<!-- Contenedor flex para alinear el botón de métricas y el perfil -->
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="metrics-btn" id="metrics-btn">
+          📊 Métricas
+        </button>
+        <div class="profile-pill" id="profile-pill">
+          <div class="avatar" id="profile-avatar">--</div>
+          <div>
+            <span class="name" id="profile-name">Sin nombre</span>
+            <span class="hint">Tocar para cambiar</span>
+          </div>
         </div>
       </div>
       <div class="sync-note" id="sync-note">Sincronizando…</div>
     </div>
-  </div>
 
   <div class="board" id="board"></div>
 

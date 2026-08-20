@@ -109,12 +109,40 @@
   }
   .card:active{cursor:grabbing;}
   .card.dragging{opacity:.35;}
+  .card--done{
+    box-shadow:var(--shadow), 0 0 0 2px rgba(127,166,91,.45);
+  }
+  .done-stamp{
+    position:absolute; top:-12px; right:-10px; width:32px; height:32px; border-radius:50%;
+    background:var(--done); color:var(--white); display:flex; align-items:center; justify-content:center;
+    font-size:16px; font-weight:700; box-shadow:0 3px 7px rgba(0,0,0,.35); border:2px solid var(--card);
+    transform:rotate(14deg); z-index:2; animation:stamp-pop .25s ease-out;
+  }
+  @keyframes stamp-pop{
+    from{ transform:rotate(14deg) scale(0); opacity:0; }
+    to{ transform:rotate(14deg) scale(1); opacity:1; }
+  }
+  @media (prefers-reduced-motion:reduce){ .done-stamp{animation:none;} }
   .tape{
     position:absolute; top:-8px; left:16px; width:46px; height:16px;
     border-radius:2px; opacity:.9; transform:rotate(-3deg);
     box-shadow:0 2px 3px rgba(0,0,0,.2);
   }
   .card-text{font-size:14.5px; line-height:1.4; margin:6px 0 10px; word-break:break-word; white-space:pre-wrap;}
+  .edit-wrapper{margin:6px 0 10px;}
+  .edit-textarea{
+    width:100%; font-family:inherit; font-size:14px; color:var(--ink);
+    background:var(--white); border:1px solid var(--card-line); border-radius:8px;
+    padding:8px 9px; resize:vertical; line-height:1.4;
+  }
+  .edit-textarea:focus{outline:2px solid var(--doing); outline-offset:1px;}
+  .edit-actions{display:flex; justify-content:flex-end; gap:6px; margin-top:6px;}
+  .edit-actions button{
+    font-family:inherit; font-size:12.5px; font-weight:600; padding:6px 11px;
+    border-radius:7px; border:none; cursor:pointer;
+  }
+  .edit-cancel{background:rgba(0,0,0,.06); color:var(--ink-soft);}
+  .edit-save{background:var(--ink); color:var(--white);}
   .card-meta{display:flex; align-items:center; justify-content:space-between; gap:8px;}
   .card-who{display:flex; align-items:center; gap:6px;}
   .mini-avatar{
@@ -425,7 +453,8 @@
 
   function renderCard(task){
     const card = document.createElement('div');
-    card.className = 'card';
+    const isDone = task.column_id === 'done';
+    card.className = 'card' + (isDone ? ' card--done' : '');
     card.draggable = true;
     card.dataset.id = task.id;
 
@@ -437,6 +466,7 @@
     const menuId = 'menu-' + task.id;
     card.innerHTML = `
       <div class="tape" style="background:${tapeColor}"></div>
+      ${isDone ? '<div class="done-stamp">✓</div>' : ''}
       <div class="card-actions" style="position:absolute; top:8px; right:6px;">
         <button class="menu-btn" data-open="${menuId}">⋯</button>
         <div class="menu" id="${menuId}">

@@ -274,19 +274,12 @@
     <!-- Área de texto para describir la tarea -->
     <textarea id="new-task-text" class="edit-textarea" rows="3" placeholder="Ej. Redactar la justificación..."></textarea>
     
-    <!-- 
-      Truco de UI: Inicia como type="text" para soportar el placeholder personalizado.
-      Al recibir el foco (onfocus) cambia a "date" mostrando el selector nativo del sistema.
-      Al perder el foco (onblur), si el usuario no eligió nada, vuelve a ser texto.
-    -->
-    <input type="text" 
-           onfocus="(this.type='date')" 
-           onblur="(this.value==''?this.type='text':this.type='date')" 
-           id="new-task-date" class="date-input" style="margin-top: 10px;" 
-           placeholder="Fecha límite para esta tarea (opcional)">
+    <!-- Anotación sutil y campo de fecha nativo restaurado -->
+    <label class="input-label" for="new-task-date">Fecha límite para esta tarea (opcional)</label>
+    <input type="date" id="new-task-date" class="date-input" title="Fecha límite">
     
     <!-- Botones de acción del modal -->
-    <div class="modal-actions" style="margin-top: 14px;">
+    <div class="modal-actions" style="margin-top: 18px;">
       <button class="edit-cancel" id="add-task-cancel" style="flex: 1; padding: 11px; border-radius: 9px;">Cancelar</button>
       <button class="btn-primary" id="add-task-save">Agregar tarea</button>
     </div>
@@ -568,27 +561,24 @@
     wrapper.className = 'edit-wrapper';
     
     /* 
-     * Inyectamos el área de texto y el campo de fecha.
-     * Evaluamos si la tarea ya tiene una fecha (task.due_date).
-     * Si la tiene, el campo inicia como 'date'; si no, inicia como 'text' para mostrar el placeholder.
+     * Inyectamos el área de texto y el campo de fecha nativo.
+     * Agregamos la pequeña etiqueta superior (input-label) para guiar al usuario.
      */
     wrapper.innerHTML = `
       <textarea class="edit-textarea" rows="3"></textarea>
-      <input type="${task.due_date ? 'date' : 'text'}" 
-             onfocus="(this.type='date')" 
-             onblur="(this.value==''?this.type='text':this.type='date')"
-             class="date-input" style="font-size: 13px;" 
-             placeholder="Fecha límite para esta tarea (opcional)"
-             value="${task.due_date || ''}">
-      <div class="edit-actions">
+      
+      <label class="input-label" style="margin-top: 6px;">Fecha límite (opcional)</label>
+      <input type="date" class="date-input" style="font-size: 13px;" value="${task.due_date || ''}">
+      
+      <div class="edit-actions" style="margin-top: 8px;">
         <button class="edit-cancel">Cancelar</button>
         <button class="edit-save">Guardar</button>
       </div>
     `;
     
     const textarea = wrapper.querySelector('textarea');
-    // Seleccionamos por clase en lugar de tipo, ya que el tipo ahora es dinámico (puede ser text o date)
-    const dateInput = wrapper.querySelector('.date-input'); 
+    // Como restauramos el tipo date estándar, podemos seleccionarlo directamente así:
+    const dateInput = wrapper.querySelector('input[type="date"]'); 
     
     textarea.value = task.text;
     textEl.replaceWith(wrapper);

@@ -313,3 +313,40 @@ h1{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(28px,4vw,40px
 .config-warning p{color:var(--muted); line-height:1.6; font-size:14px;}
 
 footer{text-align:center; color:var(--muted); font-size:11.5px; margin-top:34px; opacity:.7;}
+
+/* ===== Cierre de modales ===== */
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: var(--ink-soft);
+  line-height: 1;
+}
+.modal-close:hover {
+  color: var(--ink);
+}
+
+/* ===== Selector de color de avatar ===== */
+.color-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.color-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border 0.15s ease;
+}
+.color-circle:hover {
+  border-color: rgba(0,0,0,.2);
+}
+.color-circle.selected {
+  border-color: var(--ink);
+}

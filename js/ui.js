@@ -6,7 +6,18 @@ import { COLUMN_DEFS } from './config.js';
 import { colorForName, initials, timeAgo, escapeHtml } from './utils.js';
 import { moveTask, deleteTask, updateTaskData } from './tasks.js';
 
-// ==================== HEADER ====================
+// ==================== NAVEGACIÓN ENTRE PANTALLAS ====================
+export function showHomeScreen() {
+  document.getElementById('home-screen').style.display = 'block';
+  document.getElementById('app').style.display = 'none';
+}
+
+export function showBoardScreen() {
+  document.getElementById('home-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+// ==================== HEADER DEL TABLERO ====================
 export function updateProjectHeader(project) {
   document.getElementById('project-title').textContent = project.name;
   document.getElementById('project-subtitle').textContent =
@@ -21,6 +32,56 @@ export function applyProfilePill(profile) {
   document.getElementById('profile-name').textContent = profile.name;
   document.getElementById('profile-avatar').textContent = initials(profile.name);
   document.getElementById('profile-avatar').style.background = colorForName(profile.name);
+}
+
+// ==================== HOME: GRID DE TABLEROS ====================
+// boards: [{ id, name, role: 'owner' | 'invitado' }]
+export function renderHomeGrid(boards, onSelect) {
+  const grid = document.getElementById('home-grid');
+  grid.innerHTML = '';
+
+  if (!boards.length) {
+    grid.innerHTML = `
+      <div class="empty-hint">
+        Todavía no tienes tableros. Crea el primero con «+ Nuevo tablero»,
+        o pide a un compañero que te comparta su enlace de invitación.
+      </div>`;
+    return;
+  }
+
+  boards.forEach(b => {
+    const card = document.createElement('button');
+    card.className = 'board-card';
+    card.innerHTML = `
+      <span class="board-card-dot" style="background:${colorForName(b.name)}"></span>
+      <span class="board-card-name">${escapeHtml(b.name)}</span>
+      <span class="board-card-tag">${b.role === 'owner' ? 'Administrador' : 'Invitado'}</span>
+    `;
+    card.addEventListener('click', () => onSelect(b));
+    grid.appendChild(card);
+  });
+}
+
+export function updateHomeProfilePill(label) {
+  document.getElementById('home-profile-name').textContent = label;
+  document.getElementById('home-profile-avatar').textContent = initials(label);
+  document.getElementById('home-profile-avatar').style.background = colorForName(label);
+}
+
+export function setHomeAuthButton(text, onClick) {
+  const btn = document.getElementById('home-auth-btn');
+  btn.textContent = text;
+  btn.onclick = onClick;
+}
+
+// ==================== TOAST ====================
+let toastTimer = null;
+export function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.add('hidden'), 2600);
 }
 
 // ==================== MODALES ====================
@@ -49,7 +110,10 @@ export function closeAddTaskModal() {
   document.getElementById('add-task-modal').classList.add('hidden');
 }
 
+// Modal para CREAR un tablero nuevo (ya no funciona como selector/lista)
 export function openProjectModal() {
+  document.getElementById('new-project-name').value = '';
+  document.getElementById('create-project-btn').disabled = true;
   document.getElementById('project-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('new-project-name').focus(), 50);
 }
@@ -60,6 +124,7 @@ export function closeProjectModal() {
 
 export function openAuthModal() {
   document.getElementById('auth-modal').classList.remove('hidden');
+  document.getElementById('signup-modal').classList.add('hidden');
   setTimeout(() => document.getElementById('auth-email').focus(), 50);
 }
 
@@ -69,25 +134,6 @@ export function closeAuthModal() {
 
 export function setAuthMessage(msg) {
   document.getElementById('auth-message').textContent = msg;
-}
-
-// Renderiza la lista de proyectos en el modal como grid
-export function renderProjectList(projects, onSelect) {
-  const listEl = document.getElementById('project-list');
-  listEl.innerHTML = '';
-
-  if (!projects.length) {
-    listEl.innerHTML = '<div class="empty-hint">No hay proyectos todavía. Crea el primero.</div>';
-    return;
-  }
-
-  projects.forEach(p => {
-    const btn = document.createElement('button');
-    btn.className = 'project-item';
-    btn.textContent = p.name;
-    btn.addEventListener('click', () => onSelect(p));
-    listEl.appendChild(btn);
-  });
 }
 
 // ==================== TABLERO ====================

@@ -245,3 +245,27 @@ h1{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(28px,4vw,40px
 .config-warning p{color:var(--muted); line-height:1.6; font-size:14px;}
 
 footer{text-align:center; color:var(--muted); font-size:11.5px; margin-top:34px; opacity:.7;}
+
+/* ===== Enlaces en modales ===== */
+.modal a {
+  cursor: pointer;
+  font-weight: 600;
+}
+.modal a:hover {
+  color: var(--todo);
+}
+
+/* Asegurar estilo consistente para inputs de contraseña */
+.modal input[type="password"] {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--card-line);
+  font-family: inherit;
+  font-size: 14.5px;
+  margin-bottom: 14px;
+}
+.modal input[type="password"]:focus {
+  outline: 2px solid var(--doing);
+  outline-offset: 1px;
+}

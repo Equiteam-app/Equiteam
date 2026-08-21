@@ -23,13 +23,15 @@ export function initials(name) {
 
 // Convierte una fecha ISO a texto relativo
 export function timeAgo(iso) {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return 'justo ahora';
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  const s = Math.abs(diff);
+
+  if (s < 60) return diff >= 0 ? 'justo ahora' : 'en un momento';
   const m = Math.floor(s / 60);
-  if (m < 60) return 'hace ' + m + ' min';
+  if (m < 60) return (diff >= 0 ? 'hace ' : 'en ') + m + ' min';
   const h = Math.floor(m / 60);
-  if (h < 24) return 'hace ' + h + ' h';
-  return 'hace ' + Math.floor(h / 24) + ' d';
+  if (h < 24) return (diff >= 0 ? 'hace ' : 'en ') + h + ' h';
+  return (diff >= 0 ? 'hace ' : 'en ') + Math.floor(h / 24) + ' d';
 }
 
 // Escapa texto para evitar inyección HTML

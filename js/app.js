@@ -15,8 +15,7 @@ import { fetchTasks, addTask } from './tasks.js';
 import {
   renderBoard, updateProjectHeader, setSyncNote, applyProfilePill,
   openProfileModal, closeProfileModal, openAddTaskModal, closeAddTaskModal,
-  openProjectModal, closeProjectModal, openAuthModal, closeAuthModal,
-  setAuthMessage, renderProjectList
+  openProjectModal, closeProjectModal, setAuthMessage, renderProjectList
 } from './ui.js';
 
 // ==================== ESTADO GLOBAL ====================

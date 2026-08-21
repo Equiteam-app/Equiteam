@@ -17,7 +17,38 @@
     <div>Cargando…</div>
   </div>
 
-  <!-- App principal -->
+  <!-- Aviso de configuración faltante -->
+  <div class="config-warning hidden" id="config-warning">
+    <div class="box">
+      <h2>Falta configuración</h2>
+      <p>Configura <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code> en <code>js/config.js</code> para poder usar EquiTeam.</p>
+    </div>
+  </div>
+
+  <!-- ========== HOME: grid de tableros a pantalla completa ========== -->
+  <div id="home-screen" style="display:none;">
+    <header class="board-header">
+      <div>
+        <span class="eyebrow">EquiTeam</span>
+        <h1>Mis tableros</h1>
+        <div class="subtitle">Selecciona un tablero para entrar, o crea uno nuevo.</div>
+      </div>
+      <div class="header-right">
+        <div class="profile-pill" id="home-profile-pill">
+          <div class="avatar" id="home-profile-avatar">--</div>
+          <div>
+            <span class="name" id="home-profile-name">Invitado</span>
+            <span class="hint">Tocar para cambiar</span>
+          </div>
+        </div>
+        <button id="home-auth-btn" class="logout-btn">Iniciar sesión</button>
+      </div>
+    </header>
+    <main class="home-grid" id="home-grid"></main>
+    <button class="fab-new-board" id="open-create-project-btn">+ Nuevo tablero</button>
+  </div>
+
+  <!-- ========== TABLERO: app principal ========== -->
   <div id="app" style="display:none;">
     <header class="board-header">
       <div>
@@ -26,6 +57,10 @@
         <div class="subtitle" id="project-subtitle"></div>
       </div>
       <div class="header-right">
+        <div class="header-actions">
+          <button id="back-to-home-btn" class="icon-btn" title="Volver a mis tableros">← Tableros</button>
+          <button id="share-btn" class="icon-btn" title="Copiar enlace de invitación">🔗 Compartir</button>
+        </div>
         <div class="profile-pill" id="profile-pill">
           <div class="avatar" id="profile-avatar">--</div>
           <div>
@@ -38,86 +73,86 @@
       </div>
     </header>
     <main class="board" id="board"></main>
-    <footer>Este tablero se guarda en Supabase y lo ven solo los miembros del proyecto.</footer>
+    <footer>Este tablero se guarda en Supabase y lo ven solo quienes tengan el enlace de invitación.</footer>
   </div>
 
-  <!-- Modal de perfil -->
+  <!-- Modal de perfil (solo nombre, sin cuenta) -->
   <div class="modal-overlay hidden" id="profile-modal">
     <div class="modal">
       <h2>¿Cómo te llamas?</h2>
-      <p>No necesitas cuenta ni contraseña. Tu nombre solo se guarda en este navegador y se usa para identificar tus tarjetas.</p>
+      <p>No necesitas cuenta ni contraseña para participar en un tablero. Tu nombre solo se guarda en este navegador y se usa para identificar tus tarjetas.</p>
       <input type="text" id="profile-input" maxlength="30" placeholder="Tu nombre">
       <div class="modal-actions">
-        <button class="btn-primary" id="profile-save" disabled>Entrar al tablero</button>
+        <button class="btn-primary" id="profile-save" disabled>Guardar</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal de selección / creación de proyecto -->
+  <!-- Modal para CREAR un tablero nuevo (requiere cuenta) -->
   <div class="modal-overlay hidden" id="project-modal">
     <div class="modal">
-      <h2>Elige un proyecto</h2>
-      <p>Selecciona un grupo existente o crea uno nuevo.</p>
-      <div id="project-list"></div>
+      <h2>Nuevo tablero</h2>
+      <p>Ponle un nombre a tu tablero. Quien lo crea queda como administrador y puede invitar a los demás con un enlace.</p>
       <input type="text" id="new-project-name" maxlength="60" placeholder="Nombre del nuevo proyecto">
       <div class="modal-actions" style="margin-top:12px;">
-        <button class="btn-primary" id="create-project-btn" disabled>Crear proyecto</button>
+        <button class="edit-cancel" id="create-project-cancel" style="flex:1; padding:11px; border-radius:9px;">Cancelar</button>
+        <button class="btn-primary" id="create-project-btn" disabled>Crear tablero</button>
       </div>
     </div>
   </div>
 
-<!-- ========== MODAL DE INICIO DE SESIÓN ========== -->
-<div class="modal-overlay hidden" id="auth-modal">
-  <div class="modal">
-    <h2>Inicia sesión</h2>
-    <p>Ingresa tu correo y contraseña.</p>
+  <!-- ========== MODAL DE INICIO DE SESIÓN ========== -->
+  <div class="modal-overlay hidden" id="auth-modal">
+    <div class="modal">
+      <h2>Inicia sesión</h2>
+      <p>Ingresa tu correo y contraseña.</p>
 
-    <label class="input-label" for="auth-email">Correo electrónico</label>
-    <input type="email" id="auth-email" placeholder="tucorreo@universidad.edu" autocomplete="email">
+      <label class="input-label" for="auth-email">Correo electrónico</label>
+      <input type="email" id="auth-email" placeholder="tucorreo@universidad.edu" autocomplete="email">
 
-    <label class="input-label" for="auth-password">Contraseña</label>
-    <input type="password" id="auth-password" placeholder="Tu contraseña" autocomplete="current-password">
+      <label class="input-label" for="auth-password">Contraseña</label>
+      <input type="password" id="auth-password" placeholder="Tu contraseña" autocomplete="current-password">
 
-    <div class="modal-actions" style="margin-top:16px;">
-      <button class="btn-primary" id="auth-login-btn" disabled>Entrar</button>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn-primary" id="auth-login-btn" disabled>Entrar</button>
+      </div>
+
+      <!-- Enlace para ir a crear cuenta -->
+      <p style="margin-top:14px; font-size:13px; text-align:center;">
+        ¿No tienes cuenta? <a href="#" id="show-signup-link" style="color:var(--doing); text-decoration:underline;">Crear una</a>
+      </p>
+
+      <p style="margin-top:8px; font-size:12px; text-align:center;" id="auth-message"></p>
     </div>
-
-    <!-- Enlace para ir a crear cuenta -->
-    <p style="margin-top:14px; font-size:13px; text-align:center;">
-      ¿No tienes cuenta? <a href="#" id="show-signup-link" style="color:var(--doing); text-decoration:underline;">Crear una</a>
-    </p>
-
-    <p style="margin-top:8px; font-size:12px; text-align:center;" id="auth-message"></p>
   </div>
-</div>
 
-<!-- ========== MODAL DE CREAR CUENTA ========== -->
-<div class="modal-overlay hidden" id="signup-modal">
-  <div class="modal">
-    <h2>Crear cuenta</h2>
-    <p>Regístrate para empezar a colaborar.</p>
+  <!-- ========== MODAL DE CREAR CUENTA ========== -->
+  <div class="modal-overlay hidden" id="signup-modal">
+    <div class="modal">
+      <h2>Crear cuenta</h2>
+      <p>Solo necesitas una cuenta si vas a crear tu propio tablero.</p>
 
-    <label class="input-label" for="signup-email">Correo electrónico</label>
-    <input type="email" id="signup-email" placeholder="tucorreo@universidad.edu" autocomplete="email">
+      <label class="input-label" for="signup-email">Correo electrónico</label>
+      <input type="email" id="signup-email" placeholder="tucorreo@universidad.edu" autocomplete="email">
 
-    <label class="input-label" for="signup-password">Contraseña</label>
-    <input type="password" id="signup-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+      <label class="input-label" for="signup-password">Contraseña</label>
+      <input type="password" id="signup-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
 
-    <label class="input-label" for="signup-confirm-password">Confirmar contraseña</label>
-    <input type="password" id="signup-confirm-password" placeholder="Repite la contraseña" autocomplete="new-password">
+      <label class="input-label" for="signup-confirm-password">Confirmar contraseña</label>
+      <input type="password" id="signup-confirm-password" placeholder="Repite la contraseña" autocomplete="new-password">
 
-    <div class="modal-actions" style="margin-top:16px;">
-      <button class="btn-primary" id="signup-btn" disabled>Crear cuenta</button>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn-primary" id="signup-btn" disabled>Crear cuenta</button>
+      </div>
+
+      <!-- Enlace para volver a login -->
+      <p style="margin-top:14px; font-size:13px; text-align:center;">
+        ¿Ya tienes cuenta? <a href="#" id="show-login-link" style="color:var(--doing); text-decoration:underline;">Inicia sesión</a>
+      </p>
+
+      <p style="margin-top:8px; font-size:12px; text-align:center;" id="signup-message"></p>
     </div>
-
-    <!-- Enlace para volver a login -->
-    <p style="margin-top:14px; font-size:13px; text-align:center;">
-      ¿Ya tienes cuenta? <a href="#" id="show-login-link" style="color:var(--doing); text-decoration:underline;">Inicia sesión</a>
-    </p>
-
-    <p style="margin-top:8px; font-size:12px; text-align:center;" id="signup-message"></p>
   </div>
-</div>
 
   <!-- Modal de nueva tarea -->
   <div class="modal-overlay hidden" id="add-task-modal">
@@ -133,6 +168,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Toast de confirmación (ej. enlace copiado) -->
+  <div class="toast hidden" id="toast"></div>
 
   <!-- Script principal -->
   <script type="module" src="js/app.js"></script>

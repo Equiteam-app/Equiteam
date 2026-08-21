@@ -66,18 +66,30 @@
     </div>
   </div>
 
-  <!-- Modal de autenticación -->
-  <div class="modal-overlay hidden" id="auth-modal">
-    <div class="modal">
-      <h2>Inicia sesión</h2>
-      <p>Ingresa tu correo y te enviaremos un enlace mágico para entrar.</p>
-      <input type="email" id="auth-email" placeholder="tucorreo@universidad.edu">
-      <div class="modal-actions">
-        <button class="btn-primary" id="auth-send-link" disabled>Enviar enlace</button>
-      </div>
-      <p style="margin-top:12px; font-size:12px; text-align:center;" id="auth-message"></p>
+<!-- ========== MODAL DE AUTENTICACIÓN (EMAIL + CONTRASEÑA) ========== -->
+<div class="modal-overlay hidden" id="auth-modal">
+  <div class="modal">
+    <h2>Accede a EquiTeam</h2>
+    <p>Usa tu correo y contraseña para entrar o crea una cuenta nueva.</p>
+
+    <!-- Campo de correo -->
+    <label class="input-label" for="auth-email">Correo electrónico</label>
+    <input type="email" id="auth-email" placeholder="tucorreo@universidad.edu" autocomplete="email">
+
+    <!-- Campo de contraseña -->
+    <label class="input-label" for="auth-password">Contraseña</label>
+    <input type="password" id="auth-password" placeholder="Mínimo 6 caracteres" autocomplete="current-password">
+
+    <!-- Contenedor de botones -->
+    <div class="modal-actions" style="margin-top:16px; flex-wrap:wrap; gap:8px;">
+      <button class="btn-primary" id="auth-login-btn" disabled>Iniciar sesión</button>
+      <button class="btn-primary" id="auth-signup-btn" disabled style="background:var(--doing);">Crear cuenta</button>
     </div>
+
+    <!-- Mensaje de error/info -->
+    <p style="margin-top:12px; font-size:12px; text-align:center;" id="auth-message"></p>
   </div>
+</div>
 
   <!-- Modal de nueva tarea -->
   <div class="modal-overlay hidden" id="add-task-modal">

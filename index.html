@@ -268,8 +268,16 @@
     <!-- Área de texto para describir la tarea -->
     <textarea id="new-task-text" class="edit-textarea" rows="3" placeholder="Ej. Redactar la justificación..."></textarea>
     
-    <!-- Input nativo de fecha para el límite -->
-    <input type="date" id="new-task-date" class="date-input date-input-dark" title="Fecha límite (opcional)">
+    <!-- 
+      Truco de UI: Inicia como type="text" para soportar el placeholder personalizado.
+      Al recibir el foco (onfocus) cambia a "date" mostrando el selector nativo del sistema.
+      Al perder el foco (onblur), si el usuario no eligió nada, vuelve a ser texto.
+    -->
+    <input type="text" 
+           onfocus="(this.type='date')" 
+           onblur="(this.value==''?this.type='text':this.type='date')" 
+           id="new-task-date" class="date-input" style="margin-top: 10px;" 
+           placeholder="Fecha límite para esta tarea (opcional)">
     
     <!-- Botones de acción del modal -->
     <div class="modal-actions" style="margin-top: 14px;">
@@ -545,7 +553,7 @@
     return card;
   }
 
-  // Activa el modo in-line de edición de la tarjeta
+// Activa el modo in-line de edición de la tarjeta
   function startEdit(card, task){
     const textEl = card.querySelector('.card-text');
     card.draggable = false;
@@ -553,9 +561,19 @@
     const wrapper = document.createElement('div');
     wrapper.className = 'edit-wrapper';
     
+    /* 
+     * Inyectamos el área de texto y el campo de fecha.
+     * Evaluamos si la tarea ya tiene una fecha (task.due_date).
+     * Si la tiene, el campo inicia como 'date'; si no, inicia como 'text' para mostrar el placeholder.
+     */
     wrapper.innerHTML = `
       <textarea class="edit-textarea" rows="3"></textarea>
-      <input type="date" class="date-input" style="font-size: 13px;" value="${task.due_date || ''}">
+      <input type="${task.due_date ? 'date' : 'text'}" 
+             onfocus="(this.type='date')" 
+             onblur="(this.value==''?this.type='text':this.type='date')"
+             class="date-input" style="font-size: 13px;" 
+             placeholder="Fecha límite para esta tarea (opcional)"
+             value="${task.due_date || ''}">
       <div class="edit-actions">
         <button class="edit-cancel">Cancelar</button>
         <button class="edit-save">Guardar</button>
@@ -563,14 +581,21 @@
     `;
     
     const textarea = wrapper.querySelector('textarea');
-    const dateInput = wrapper.querySelector('input[type="date"]');
+    // Seleccionamos por clase en lugar de tipo, ya que el tipo ahora es dinámico (puede ser text o date)
+    const dateInput = wrapper.querySelector('.date-input'); 
+    
     textarea.value = task.text;
     textEl.replaceWith(wrapper);
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 
-    wrapper.querySelector('.edit-cancel').addEventListener('click', (e) => { e.stopPropagation(); render(); });
+    // Evento para descartar los cambios y redibujar la columna
+    wrapper.querySelector('.edit-cancel').addEventListener('click', (e) => { 
+      e.stopPropagation(); 
+      render(); 
+    });
     
+    // Evento para guardar las modificaciones en la base de datos
     wrapper.querySelector('.edit-save').addEventListener('click', (e) => {
       e.stopPropagation();
       const newText = textarea.value.trim();
@@ -578,7 +603,16 @@
       updateTaskData(task.id, newText, dateInput.value);
     });
     
-    textarea.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); wrapper.querySelector('.edit-save').click(); } if(e.key === 'Escape'){ render(); } });
+    // Permite usar atajos de teclado (Enter para guardar, Escape para cancelar)
+    textarea.addEventListener('keydown', (e) => { 
+      if(e.key === 'Enter' && !e.shiftKey){ 
+        e.preventDefault(); 
+        wrapper.querySelector('.edit-save').click(); 
+      } 
+      if(e.key === 'Escape'){ 
+        render(); 
+      } 
+    });
   }
   
 // Crea y calcula las métricas de participación para el panel colapsable

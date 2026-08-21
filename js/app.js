@@ -224,6 +224,15 @@ document.addEventListener('click', () => {
   document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
 });
 
+// ---------- Cerrar modales con la × ----------
+document.getElementById('auth-close').addEventListener('click', () => {
+  closeAuthModal();
+});
+
+document.getElementById('signup-close').addEventListener('click', () => {
+  closeSignupModal();
+});
+
 // ---------- Perfil (nombre, sin cuenta) ----------
 document.getElementById('profile-pill').addEventListener('click', () => {
   openProfileModal(profile, getCurrentUser());

@@ -2,10 +2,10 @@
 // INTERFAZ DE USUARIO (RENDERIZADO Y MODALES)
 // =====================================================
 
-import { COLUMN_DEFS } from './config.js';
+import { COLUMN_DEFS, TAPE_PALETTE } from './config.js';
 import { colorForName, initials, timeAgo, escapeHtml } from './utils.js';
 import { moveTask, deleteTask, updateTaskData } from './tasks.js';
-import { COLUMN_DEFS, TAPE_PALETTE } from './config.js';
+
 
 
 // ==================== NAVEGACIÓN ENTRE PANTALLAS ====================
@@ -261,7 +261,9 @@ function renderCard(task, profile, refresh, projectId) {
   if (isDone) {
     tapeHtml = '<div class="tape" style="background:#369C35; color:#ffffff;">Hecho</div>';
   } else if (task.author) {
-const tapeColor = task.author ? (profile?.color || colorForName(task.author)) : 'rgba(255,255,255,.28)';
+  const tapeColor = task.author
+    ? (profile?.color || colorForName(task.author))
+    : 'rgba(255,255,255,.28)';
     tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.author)}</div>`;
   } else {
     tapeHtml = '<div class="tape" style="background:rgba(255,255,255,.28)"></div>';

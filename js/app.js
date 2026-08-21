@@ -3,19 +3,25 @@
 // =====================================================
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
-import { loadProfile, saveProfile, timeAgo } from './utils.js';  // <-- AÑADIDO timeAgo
+import { sb } from './supabase.js';
+import {
+  loadProfile, saveProfile, timeAgo, colorForName, initials,
+  getJoinedBoards, addJoinedBoard
+} from './utils.js';
 import {
   getSession, onAuthChange, signInWithPassword, signUpWithPassword, signOut, getCurrentUser
-} from './auth.js';  // <-- ACTUALIZADO: ahora usa signInWithPassword y signUpWithPassword
+} from './auth.js';
 import {
   fetchProjects, createProject, getProjectById,
-  getProjectIdFromUrl, setProjectUrl
+  getProjectIdFromUrl, setProjectUrl, clearProjectUrl, getInviteLink
 } from './projects.js';
 import { fetchTasks, addTask } from './tasks.js';
 import {
   renderBoard, updateProjectHeader, setSyncNote, applyProfilePill,
   openProfileModal, closeProfileModal, openAddTaskModal, closeAddTaskModal,
-  openProjectModal, closeProjectModal, setAuthMessage, renderProjectList
+  openProjectModal, closeProjectModal, setAuthMessage, openAuthModal, closeAuthModal,
+  showHomeScreen, showBoardScreen, renderHomeGrid, updateHomeProfilePill,
+  setHomeAuthButton, showToast
 } from './ui.js';
 
 // ==================== ESTADO GLOBAL ====================
@@ -24,8 +30,11 @@ let profile = loadProfile();
 let currentProject = null;
 let isMetricsCollapsed = true;
 let realtimeChannel = null;
+// Nombre pendiente de un tablero que el usuario quiso crear sin tener cuenta;
+// se retoma automáticamente después de iniciar sesión o registrarse.
+let pendingBoardName = null;
 
-// ==================== FUNCIÓN PRINCIPAL DE RENDER ====================
+// ==================== FUNCIÓN PRINCIPAL DE RENDER (TABLERO) ====================
 function render() {
   renderBoard(
     tasks,
@@ -44,6 +53,7 @@ function render() {
 function subscribeRealtime(projectId) {
   if (realtimeChannel) {
     sb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
   }
 
   realtimeChannel = sb.channel('tasks-changes-' + projectId)
@@ -64,17 +74,76 @@ function subscribeRealtime(projectId) {
     .subscribe();
 }
 
-// ==================== MANEJO DE PROYECTOS ====================
-async function selectProject(project) {
+function unsubscribeRealtime() {
+  if (realtimeChannel) {
+    sb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+}
+
+// ==================== HOME (GRID DE TABLEROS) ====================
+
+// Combina los tableros del servidor (donde el usuario es miembro registrado)
+// con los tableros recordados localmente (creados o abiertos por invitación
+// en este navegador), sin duplicar.
+function mergeBoards(serverBoards, localBoards) {
+  const map = new Map();
+  serverBoards.forEach(p => map.set(p.id, { id: p.id, name: p.name, role: 'owner' }));
+  localBoards.forEach(b => {
+    if (!map.has(b.id)) map.set(b.id, { id: b.id, name: b.name, role: 'invitado' });
+  });
+  return Array.from(map.values());
+}
+
+function updateHomeProfileUI(user) {
+  if (user) {
+    updateHomeProfilePill(user.email);
+    setHomeAuthButton('Cerrar sesión', async () => {
+      await signOut();
+      clearProjectUrl();
+      await renderHome();
+    });
+  } else {
+    const label = profile && profile.name ? profile.name : 'Invitado';
+    updateHomeProfilePill(label);
+    setHomeAuthButton('Iniciar sesión', () => {
+      setAuthMessage('');
+      openAuthModal();
+    });
+  }
+}
+
+async function renderHome() {
+  unsubscribeRealtime();
+  currentProject = null;
+  showHomeScreen();
+
+  const user = getCurrentUser();
+  updateHomeProfileUI(user);
+
+  const serverBoards = user ? await fetchProjects() : [];
+  const localBoards = getJoinedBoards();
+  const boards = mergeBoards(serverBoards, localBoards);
+
+  renderHomeGrid(boards, (b) => openBoard(b.id));
+}
+
+// ==================== ENTRAR / ABRIR UN TABLERO ====================
+async function enterBoard(project) {
   currentProject = project;
+  addJoinedBoard(project);
   setProjectUrl(project.id);
-  closeProjectModal();
 
-  tasks = await fetchTasks(currentProject.id);
+  tasks = await fetchTasks(project.id);
 
-  document.getElementById('app').style.display = 'block';
+  showBoardScreen();
   updateProjectHeader(project);
 
+  // El botón de "Cerrar sesión" solo tiene sentido si hay una cuenta activa
+  const logoutBtn = document.getElementById('logout-btn');
+  logoutBtn.style.display = getCurrentUser() ? 'inline-block' : 'none';
+
+  profile = loadProfile();
   if (profile && profile.name) {
     applyProfilePill(profile);
   } else {
@@ -83,12 +152,43 @@ async function selectProject(project) {
 
   render();
   setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
-  subscribeRealtime(currentProject.id);
+  subscribeRealtime(project.id);
+}
+
+async function openBoard(projectId) {
+  const project = await getProjectById(projectId);
+  if (!project) {
+    showToast('Ese tablero ya no existe.');
+    return;
+  }
+  await enterBoard(project);
+}
+
+// ==================== FLUJO DESPUÉS DE AUTENTICARSE ====================
+async function afterAuthSuccess() {
+  closeAuthModal();
+
+  // Si el usuario quería crear un tablero pero no tenía cuenta, lo creamos ahora
+  if (pendingBoardName) {
+    const name = pendingBoardName;
+    pendingBoardName = null;
+    const project = await createProject(name);
+    if (project) {
+      await enterBoard(project);
+      return;
+    }
+  }
+
+  if (currentProject) {
+    await enterBoard(currentProject);
+  } else {
+    await renderHome();
+  }
 }
 
 // ==================== INICIALIZACIÓN ====================
 async function boot() {
-  // 1. Verificar credenciales
+  // 1. Verificar credenciales de Supabase
   if (!SUPABASE_URL || SUPABASE_URL.includes('PEGA_AQUI') ||
       !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('PEGA_AQUI')) {
     document.getElementById('loading-screen').classList.add('hidden');
@@ -96,49 +196,27 @@ async function boot() {
     return;
   }
 
-  // 2. Obtener sesión
-  const user = await getSession();
-  if (!user) {
-    document.getElementById('loading-screen').classList.add('hidden');
-    openAuthModal();
-    return;
-  }
-
-  // 3. Cargar perfil local
+  // 2. Cargar la sesión si existe (no es obligatoria para navegar)
+  await getSession();
   profile = loadProfile();
 
-  // 4. Obtener proyecto de la URL
-  const projectId = getProjectIdFromUrl();
-  if (projectId) {
-    currentProject = await getProjectById(projectId);
-  }
-
-  // 5. Ocultar pantalla de carga
   document.getElementById('loading-screen').classList.add('hidden');
 
-  // 6. Si no hay proyecto, mostrar selector
-  if (!currentProject) {
-    document.getElementById('app').style.display = 'none';
-    const projects = await fetchProjects();
-    renderProjectList(projects, selectProject);
-    openProjectModal();
-    return;
+  // 3. Si la URL trae un id de proyecto (enlace de invitación o recarga
+  //    dentro de un tablero), entramos directo — sin exigir cuenta.
+  const projectId = getProjectIdFromUrl();
+  if (projectId) {
+    const project = await getProjectById(projectId);
+    if (project) {
+      await enterBoard(project);
+      return;
+    }
+    // El id en la URL ya no es válido: volvemos al home
+    clearProjectUrl();
   }
 
-  // 7. Cargar tareas y mostrar tablero
-  tasks = await fetchTasks(currentProject.id);
-  document.getElementById('app').style.display = 'block';
-  updateProjectHeader(currentProject);
-
-  if (profile && profile.name) {
-    applyProfilePill(profile);
-  } else {
-    openProfileModal('');
-  }
-
-  render();
-  setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
-  subscribeRealtime(currentProject.id);
+  // 4. Sin proyecto en la URL: mostramos el home con el grid de tableros
+  await renderHome();
 }
 
 // ==================== EVENTOS DE MODALES Y BOTONES ====================
@@ -146,8 +224,12 @@ document.addEventListener('click', () => {
   document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
 });
 
-// Perfil
+// ---------- Perfil (nombre, sin cuenta) ----------
 document.getElementById('profile-pill').addEventListener('click', () => {
+  openProfileModal(profile ? profile.name : '');
+});
+
+document.getElementById('home-profile-pill').addEventListener('click', () => {
   openProfileModal(profile ? profile.name : '');
 });
 
@@ -166,9 +248,13 @@ document.getElementById('profile-save').addEventListener('click', () => {
   if (!name) return;
   profile = { name };
   saveProfile(profile);
-  applyProfilePill(profile);
   closeProfileModal();
-  render();
+  if (currentProject) {
+    applyProfilePill(profile);
+    render();
+  } else {
+    renderHome();
+  }
 });
 
 // ==================== AUTENTICACIÓN (EMAIL + PASSWORD) ====================
@@ -190,28 +276,15 @@ const signupMessage = document.getElementById('signup-message');
 const authModal = document.getElementById('auth-modal');
 const signupModal = document.getElementById('signup-modal');
 
-// --- Función para abrir/cerrar modales de autenticación ---
-function openAuthModal() {
-  authModal.classList.remove('hidden');
-  signupModal.classList.add('hidden');
-  setTimeout(() => authEmail.focus(), 50);
-}
-
 function openSignupModal() {
   signupModal.classList.remove('hidden');
   authModal.classList.add('hidden');
   setTimeout(() => signupEmail.focus(), 50);
 }
 
-function closeAuthModal() {
-  authModal.classList.add('hidden');
-}
-
 function closeSignupModal() {
   signupModal.classList.add('hidden');
 }
-
-// Exportar estas funciones si se usan en otros archivos (no es necesario aquí)
 
 // --- Habilitar/deshabilitar botón de login ---
 function updateLoginButton() {
@@ -259,8 +332,7 @@ authLoginBtn.addEventListener('click', async () => {
     authMessage.textContent = 'Error: ' + error.message;
   } else {
     authMessage.textContent = '';
-    closeAuthModal();
-    boot(); // recargar la app con la sesión iniciada
+    await afterAuthSuccess();
   }
 });
 
@@ -270,7 +342,6 @@ signupBtn.addEventListener('click', async () => {
   const password = signupPassword.value;
   const confirmPassword = signupConfirmPassword.value;
 
-  // Validar que las contraseñas coincidan
   if (password !== confirmPassword) {
     signupMessage.textContent = 'Las contraseñas no coinciden.';
     signupConfirmPassword.value = '';
@@ -282,19 +353,15 @@ signupBtn.addEventListener('click', async () => {
   const result = await signUpWithPassword(email, password);
 
   if (result) {
-    if (result.message) {
-      signupMessage.textContent = result.message;
-    } else {
-      signupMessage.textContent = 'Error: ' + result.message;
-    }
+    signupMessage.textContent = result.message ? result.message : 'Error: ' + result.message;
   } else {
     signupMessage.textContent = '';
     closeSignupModal();
-    boot();
+    await afterAuthSuccess();
   }
 });
 
-// --- Enter en login ---
+// --- Enter en login / signup ---
 authPassword.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -302,7 +369,6 @@ authPassword.addEventListener('keydown', (e) => {
   }
 });
 
-// --- Enter en signup ---
 signupConfirmPassword.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -313,10 +379,21 @@ signupConfirmPassword.addEventListener('keydown', (e) => {
 // ==================== CIERRE DE SESIÓN ====================
 document.getElementById('logout-btn').addEventListener('click', async () => {
   await signOut();
+  clearProjectUrl();
   location.reload();
 });
 
-// ==================== PROYECTOS ====================
+// ==================== HOME: NAVEGACIÓN Y CREACIÓN DE TABLEROS ====================
+
+// Botón "+ Nuevo tablero" (abre el popup de creación)
+document.getElementById('open-create-project-btn').addEventListener('click', () => {
+  openProjectModal();
+});
+
+document.getElementById('create-project-cancel').addEventListener('click', () => {
+  closeProjectModal();
+});
+
 document.getElementById('new-project-name').addEventListener('input', (e) => {
   document.getElementById('create-project-btn').disabled = !e.target.value.trim();
 });
@@ -327,11 +404,47 @@ document.getElementById('new-project-name').addEventListener('keydown', (e) => {
   }
 });
 
+// Crear tablero: requiere cuenta. Si no hay sesión, se guarda el nombre
+// pendiente y se pide iniciar sesión / registrarse.
 document.getElementById('create-project-btn').addEventListener('click', async () => {
   const name = document.getElementById('new-project-name').value.trim();
   if (!name) return;
+
+  const user = getCurrentUser();
+  if (!user) {
+    pendingBoardName = name;
+    closeProjectModal();
+    setAuthMessage('Para crear un tablero nuevo necesitas iniciar sesión o crear una cuenta. Tus compañeros pueden unirse solo con su nombre usando el enlace de invitación, sin necesidad de cuenta.');
+    openAuthModal();
+    return;
+  }
+
   const project = await createProject(name);
-  if (project) selectProject(project);
+  closeProjectModal();
+  if (project) {
+    await enterBoard(project);
+  } else {
+    showToast('No se pudo crear el tablero. Intenta de nuevo.');
+  }
+});
+
+// Volver del tablero al home
+document.getElementById('back-to-home-btn').addEventListener('click', () => {
+  unsubscribeRealtime();
+  clearProjectUrl();
+  renderHome();
+});
+
+// Compartir / invitar: copia el enlace del tablero actual
+document.getElementById('share-btn').addEventListener('click', async () => {
+  if (!currentProject) return;
+  const link = getInviteLink(currentProject.id);
+  try {
+    await navigator.clipboard.writeText(link);
+    showToast('Enlace de invitación copiado ✅');
+  } catch (e) {
+    showToast(link);
+  }
 });
 
 // ==================== NUEVA TAREA ====================
@@ -356,13 +469,12 @@ document.getElementById('new-task-text').addEventListener('keydown', (e) => {
 });
 
 // ==================== CAMBIOS DE AUTENTICACIÓN ====================
-onAuthChange((event, session) => {
-  if (event === 'SIGNED_IN') {
-    closeAuthModal();
-    boot();
-  } else if (event === 'SIGNED_OUT') {
+onAuthChange((event) => {
+  if (event === 'SIGNED_OUT') {
     location.reload();
   }
+  // SIGNED_IN se maneja explícitamente en los botones de login/signup
+  // (afterAuthSuccess) para controlar el flujo de "tablero pendiente".
 });
 
 // ==================== ARRANQUE ====================

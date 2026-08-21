@@ -245,8 +245,6 @@ function renderCard(task, profile, refresh, projectId) {
       } else {
         alertHtml = `<div class="badge-due ok">📅 Para el ${due.toLocaleDateString()}</div>`;
       }
-    } else {
-      alertHtml = `<div class="badge-due ok">✅ Era para el ${due.toLocaleDateString()}</div>`;
     }
   }
 

@@ -2,7 +2,7 @@
 // FUNCIONES AUXILIARES
 // =====================================================
 
-import { TAPE_PALETTE, PROFILE_KEY } from './config.js';
+import { TAPE_PALETTE, PROFILE_KEY, JOINED_BOARDS_KEY } from './config.js';
 
 // Devuelve un color de la paleta basado en el nombre
 export function colorForName(name) {
@@ -52,4 +52,41 @@ export function loadProfile() {
 // Guarda el perfil en localStorage
 export function saveProfile(p) {
   localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+}
+
+// =====================================================
+// TABLEROS VISITADOS / INVITADOS (localStorage)
+// =====================================================
+// Como los usuarios que ingresan solo con su nombre no tienen una cuenta
+// de Supabase, no podemos guardar su membresía en la base de datos.
+// En su lugar, recordamos en este navegador los tableros a los que ha
+// entrado (creados o por invitación), para mostrarlos en el grid "Mis tableros".
+
+// Obtiene la lista de tableros recordados en este navegador
+export function getJoinedBoards() {
+  try {
+    const raw = localStorage.getItem(JOINED_BOARDS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// Agrega (o actualiza) un tablero en la lista local de recordados
+export function addJoinedBoard(project) {
+  if (!project || !project.id) return;
+  const boards = getJoinedBoards().filter(b => b.id !== project.id);
+  boards.unshift({
+    id: project.id,
+    name: project.name,
+    joinedAt: new Date().toISOString()
+  });
+  // Limitamos el historial para no acumular indefinidamente
+  localStorage.setItem(JOINED_BOARDS_KEY, JSON.stringify(boards.slice(0, 40)));
+}
+
+// Elimina un tablero de la lista local recordada (por ejemplo, si ya no existe)
+export function removeJoinedBoard(projectId) {
+  const boards = getJoinedBoards().filter(b => b.id !== projectId);
+  localStorage.setItem(JOINED_BOARDS_KEY, JSON.stringify(boards));
 }

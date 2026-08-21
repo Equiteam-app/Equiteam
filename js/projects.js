@@ -19,10 +19,12 @@ export async function fetchProjects() {
     console.error('Error al cargar proyectos:', error);
     return [];
   }
-  return data.map(m => m.projects);
+  return data.map(m => m.projects).filter(Boolean);
 }
 
 // Crea un nuevo proyecto y asigna al usuario como owner
+// NOTA: solo debe llamarse si hay un usuario autenticado (ver app.js),
+// ya que crear un tablero requiere cuenta.
 export async function createProject(name) {
   const user = getCurrentUser();
   if (!user) return null;
@@ -65,9 +67,23 @@ export function getProjectIdFromUrl() {
   return params.get('project');
 }
 
-// Actualiza la URL con el id del proyecto
+// Actualiza la URL con el id del proyecto (al entrar a un tablero)
 export function setProjectUrl(projectId) {
   const url = new URL(window.location);
   url.searchParams.set('project', projectId);
   window.history.pushState({}, '', url);
+}
+
+// Limpia el parámetro de proyecto en la URL (al volver al home)
+export function clearProjectUrl() {
+  const url = new URL(window.location);
+  url.searchParams.delete('project');
+  window.history.pushState({}, '', url);
+}
+
+// Genera el enlace de invitación absoluto para compartir un tablero
+export function getInviteLink(projectId) {
+  const url = new URL(window.location.origin + window.location.pathname);
+  url.searchParams.set('project', projectId);
+  return url.toString();
 }

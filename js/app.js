@@ -19,9 +19,9 @@ import { fetchTasks, addTask } from './tasks.js';
 import {
   renderBoard, updateProjectHeader, setSyncNote, applyProfilePill,
   openProfileModal, closeProfileModal, openAddTaskModal, closeAddTaskModal,
-  openProjectModal, closeProjectModal, setAuthMessage, openAuthModal, closeAuthModal,
-  showHomeScreen, showBoardScreen, renderHomeGrid, updateHomeProfilePill,
-  setHomeAuthButton, showToast
+  openProjectModal, closeProjectModal, setAuthMessage, openAuthModal, closeAuthModal, 
+  openSignupModal, closeSignupModal, showHomeScreen, showBoardScreen, renderHomeGrid, 
+  updateHomeProfilePill, setHomeAuthButton, showToast
 } from './ui.js';
 
 // ==================== ESTADO GLOBAL ====================
@@ -145,9 +145,9 @@ async function enterBoard(project) {
 
   profile = loadProfile();
   if (profile && profile.name) {
-    applyProfilePill(profile);
+    applyProfilePill(profile, getCurrentUser());
   } else {
-    openProfileModal('');
+    openProfileModal(profile, getCurrentUser());
   }
 
   render();
@@ -226,11 +226,11 @@ document.addEventListener('click', () => {
 
 // ---------- Perfil (nombre, sin cuenta) ----------
 document.getElementById('profile-pill').addEventListener('click', () => {
-  openProfileModal(profile ? profile.name : '');
+  openProfileModal(profile, getCurrentUser());
 });
 
 document.getElementById('home-profile-pill').addEventListener('click', () => {
-  openProfileModal(profile ? profile.name : '');
+  openProfileModal(profile, getCurrentUser());
 });
 
 document.getElementById('profile-input').addEventListener('input', (e) => {
@@ -246,11 +246,17 @@ document.getElementById('profile-input').addEventListener('keydown', (e) => {
 document.getElementById('profile-save').addEventListener('click', () => {
   const name = document.getElementById('profile-input').value.trim();
   if (!name) return;
-  profile = { name };
+
+  // Obtener color seleccionado del modal
+  const overlay = document.getElementById('profile-modal');
+  const selectedColor = overlay.dataset.selectedColor || '#d9a441';
+
+  profile = { name, color: selectedColor };
   saveProfile(profile);
   closeProfileModal();
+
   if (currentProject) {
-    applyProfilePill(profile);
+    applyProfilePill(profile, getCurrentUser());
     render();
   } else {
     renderHome();
@@ -271,20 +277,6 @@ const signupPassword = document.getElementById('signup-password');
 const signupConfirmPassword = document.getElementById('signup-confirm-password');
 const signupBtn = document.getElementById('signup-btn');
 const signupMessage = document.getElementById('signup-message');
-
-// --- Referencias modales ---
-const authModal = document.getElementById('auth-modal');
-const signupModal = document.getElementById('signup-modal');
-
-function openSignupModal() {
-  signupModal.classList.remove('hidden');
-  authModal.classList.add('hidden');
-  setTimeout(() => signupEmail.focus(), 50);
-}
-
-function closeSignupModal() {
-  signupModal.classList.add('hidden');
-}
 
 // --- Habilitar/deshabilitar botón de login ---
 function updateLoginButton() {
@@ -311,11 +303,13 @@ signupConfirmPassword.addEventListener('input', updateSignupButton);
 // --- Enlaces para cambiar entre modales ---
 document.getElementById('show-signup-link').addEventListener('click', (e) => {
   e.preventDefault();
+  closeAuthModal();
   openSignupModal();
 });
 
 document.getElementById('show-login-link').addEventListener('click', (e) => {
   e.preventDefault();
+  closeSignupModal();
   openAuthModal();
 });
 
@@ -438,7 +432,7 @@ document.getElementById('back-to-home-btn').addEventListener('click', () => {
 // Compartir / invitar: copia el enlace del tablero actual
 document.getElementById('share-btn').addEventListener('click', async () => {
   if (!currentProject) return;
-  const link = getInviteLink(currentProject.id);
+  const link = getInviteLink(currentProject);
   try {
     await navigator.clipboard.writeText(link);
     showToast('Enlace de invitación copiado ✅');

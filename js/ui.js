@@ -139,6 +139,21 @@ export function openProfileModal(profile, authUser) {
   setTimeout(() => input.focus(), 50);
 }
 
+export function closeProfileModal() {
+  document.getElementById('profile-modal').classList.add('hidden');
+}
+
+export function openAddTaskModal() {
+  document.getElementById('new-task-text').value = '';
+  document.getElementById('new-task-date').value = '';
+  document.getElementById('add-task-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('new-task-text').focus(), 50);
+}
+
+export function closeAddTaskModal() {
+  document.getElementById('add-task-modal').classList.add('hidden');
+}
+
 // Modal para CREAR un tablero nuevo (ya no funciona como selector/lista)
 export function openProjectModal() {
   document.getElementById('new-project-name').value = '';

@@ -3,10 +3,10 @@
 // =====================================================
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
-import { loadProfile, saveProfile } from './utils.js';
+import { loadProfile, saveProfile, timeAgo } from './utils.js';  // <-- AÑADIDO timeAgo
 import {
-  getSession, onAuthChange, signInWithMagicLink, signOut, getCurrentUser
-} from './auth.js';
+  getSession, onAuthChange, signInWithPassword, signUpWithPassword, signOut, getCurrentUser
+} from './auth.js';  // <-- ACTUALIZADO: ahora usa signInWithPassword y signUpWithPassword
 import {
   fetchProjects, createProject, getProjectById,
   getProjectIdFromUrl, setProjectUrl
@@ -36,7 +36,7 @@ function render() {
       isMetricsCollapsed = !isMetricsCollapsed;
       render();
     },
-    render,           // callback para refrescar (por ejemplo, en cancelar edición)
+    render,           // callback para refrescar (por ejemplo, al cancelar edición)
     currentProject.id
   );
 }
@@ -174,14 +174,12 @@ document.getElementById('profile-save').addEventListener('click', () => {
 
 // ==================== AUTENTICACIÓN (EMAIL + PASSWORD) ====================
 
-// Referencias a los campos
 const authEmail = document.getElementById('auth-email');
 const authPassword = document.getElementById('auth-password');
 const authLoginBtn = document.getElementById('auth-login-btn');
 const authSignupBtn = document.getElementById('auth-signup-btn');
 const authMessage = document.getElementById('auth-message');
 
-// Función para habilitar/deshabilitar botones según los campos
 function updateAuthButtons() {
   const emailOk = authEmail.value.trim().length > 0;
   const passwordOk = authPassword.value.length >= 6;
@@ -189,11 +187,9 @@ function updateAuthButtons() {
   authSignupBtn.disabled = !(emailOk && passwordOk);
 }
 
-// Escuchar cambios en email y contraseña
 authEmail.addEventListener('input', updateAuthButtons);
 authPassword.addEventListener('input', updateAuthButtons);
 
-// Login con email y contraseña
 authLoginBtn.addEventListener('click', async () => {
   const email = authEmail.value.trim();
   const password = authPassword.value;
@@ -211,7 +207,6 @@ authLoginBtn.addEventListener('click', async () => {
   }
 });
 
-// Crear cuenta nueva
 authSignupBtn.addEventListener('click', async () => {
   const email = authEmail.value.trim();
   const password = authPassword.value;
@@ -221,7 +216,6 @@ authSignupBtn.addEventListener('click', async () => {
   const result = await signUpWithPassword(email, password);
 
   if (result) {
-    // Puede ser un error o un mensaje de confirmación
     if (result.message) {
       authMessage.textContent = result.message;
     } else {
@@ -234,7 +228,6 @@ authSignupBtn.addEventListener('click', async () => {
   }
 });
 
-// Permitir Enter para iniciar sesión
 authPassword.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -242,7 +235,31 @@ authPassword.addEventListener('keydown', (e) => {
   }
 });
 
-// Nueva tarea
+// ==================== CIERRE DE SESIÓN ====================
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await signOut();
+  location.reload();
+});
+
+// ==================== PROYECTOS ====================
+document.getElementById('new-project-name').addEventListener('input', (e) => {
+  document.getElementById('create-project-btn').disabled = !e.target.value.trim();
+});
+
+document.getElementById('new-project-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.value.trim()) {
+    document.getElementById('create-project-btn').click();
+  }
+});
+
+document.getElementById('create-project-btn').addEventListener('click', async () => {
+  const name = document.getElementById('new-project-name').value.trim();
+  if (!name) return;
+  const project = await createProject(name);
+  if (project) selectProject(project);
+});
+
+// ==================== NUEVA TAREA ====================
 document.getElementById('add-task-cancel').addEventListener('click', closeAddTaskModal);
 
 document.getElementById('add-task-save').addEventListener('click', async () => {
@@ -263,7 +280,7 @@ document.getElementById('new-task-text').addEventListener('keydown', (e) => {
   }
 });
 
-// Cambios de autenticación (por ejemplo, al volver del enlace mágico)
+// ==================== CAMBIOS DE AUTENTICACIÓN ====================
 onAuthChange((event, session) => {
   if (event === 'SIGNED_IN') {
     closeAuthModal();

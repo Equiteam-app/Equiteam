@@ -172,50 +172,74 @@ document.getElementById('profile-save').addEventListener('click', () => {
   render();
 });
 
-// Autenticación
-document.getElementById('auth-email').addEventListener('input', (e) => {
-  document.getElementById('auth-send-link').disabled = !e.target.value.trim();
-});
+// ==================== AUTENTICACIÓN (EMAIL + PASSWORD) ====================
 
-document.getElementById('auth-email').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && e.target.value.trim()) {
-    document.getElementById('auth-send-link').click();
-  }
-});
+// Referencias a los campos
+const authEmail = document.getElementById('auth-email');
+const authPassword = document.getElementById('auth-password');
+const authLoginBtn = document.getElementById('auth-login-btn');
+const authSignupBtn = document.getElementById('auth-signup-btn');
+const authMessage = document.getElementById('auth-message');
 
-document.getElementById('auth-send-link').addEventListener('click', async () => {
-  const email = document.getElementById('auth-email').value.trim();
-  if (!email) return;
-  setAuthMessage('Enviando enlace…');
-  const error = await signInWithMagicLink(email);
+// Función para habilitar/deshabilitar botones según los campos
+function updateAuthButtons() {
+  const emailOk = authEmail.value.trim().length > 0;
+  const passwordOk = authPassword.value.length >= 6;
+  authLoginBtn.disabled = !(emailOk && passwordOk);
+  authSignupBtn.disabled = !(emailOk && passwordOk);
+}
+
+// Escuchar cambios en email y contraseña
+authEmail.addEventListener('input', updateAuthButtons);
+authPassword.addEventListener('input', updateAuthButtons);
+
+// Login con email y contraseña
+authLoginBtn.addEventListener('click', async () => {
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+  if (!email || !password) return;
+
+  authMessage.textContent = 'Iniciando sesión…';
+  const error = await signInWithPassword(email, password);
+
   if (error) {
-    setAuthMessage('Error: ' + error.message);
+    authMessage.textContent = 'Error: ' + error.message;
   } else {
-    setAuthMessage('Revisa tu correo y haz clic en el enlace para entrar.');
+    authMessage.textContent = '';
+    closeAuthModal();
+    boot(); // recargar la app con la sesión iniciada
   }
 });
 
-document.getElementById('logout-btn').addEventListener('click', async () => {
-  await signOut();
-  location.reload();
-});
+// Crear cuenta nueva
+authSignupBtn.addEventListener('click', async () => {
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+  if (!email || !password) return;
 
-// Proyectos (modal)
-document.getElementById('new-project-name').addEventListener('input', (e) => {
-  document.getElementById('create-project-btn').disabled = !e.target.value.trim();
-});
+  authMessage.textContent = 'Creando cuenta…';
+  const result = await signUpWithPassword(email, password);
 
-document.getElementById('new-project-name').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && e.target.value.trim()) {
-    document.getElementById('create-project-btn').click();
+  if (result) {
+    // Puede ser un error o un mensaje de confirmación
+    if (result.message) {
+      authMessage.textContent = result.message;
+    } else {
+      authMessage.textContent = 'Error: ' + result.message;
+    }
+  } else {
+    authMessage.textContent = '';
+    closeAuthModal();
+    boot();
   }
 });
 
-document.getElementById('create-project-btn').addEventListener('click', async () => {
-  const name = document.getElementById('new-project-name').value.trim();
-  if (!name) return;
-  const project = await createProject(name);
-  if (project) selectProject(project);
+// Permitir Enter para iniciar sesión
+authPassword.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (!authLoginBtn.disabled) authLoginBtn.click();
+  }
 });
 
 // Nueva tarea

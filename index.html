@@ -66,28 +66,56 @@
     </div>
   </div>
 
-<!-- ========== MODAL DE AUTENTICACIÓN (EMAIL + CONTRASEÑA) ========== -->
+<!-- ========== MODAL DE INICIO DE SESIÓN ========== -->
 <div class="modal-overlay hidden" id="auth-modal">
   <div class="modal">
-    <h2>Accede a EquiTeam</h2>
-    <p>Usa tu correo y contraseña para entrar o crea una cuenta nueva.</p>
+    <h2>Inicia sesión</h2>
+    <p>Ingresa tu correo y contraseña.</p>
 
-    <!-- Campo de correo -->
     <label class="input-label" for="auth-email">Correo electrónico</label>
     <input type="email" id="auth-email" placeholder="tucorreo@universidad.edu" autocomplete="email">
 
-    <!-- Campo de contraseña -->
     <label class="input-label" for="auth-password">Contraseña</label>
-    <input type="password" id="auth-password" placeholder="Mínimo 6 caracteres" autocomplete="current-password">
+    <input type="password" id="auth-password" placeholder="Tu contraseña" autocomplete="current-password">
 
-    <!-- Contenedor de botones -->
-    <div class="modal-actions" style="margin-top:16px; flex-wrap:wrap; gap:8px;">
-      <button class="btn-primary" id="auth-login-btn" disabled>Iniciar sesión</button>
-      <button class="btn-primary" id="auth-signup-btn" disabled style="background:var(--doing);">Crear cuenta</button>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-primary" id="auth-login-btn" disabled>Entrar</button>
     </div>
 
-    <!-- Mensaje de error/info -->
-    <p style="margin-top:12px; font-size:12px; text-align:center;" id="auth-message"></p>
+    <!-- Enlace para ir a crear cuenta -->
+    <p style="margin-top:14px; font-size:13px; text-align:center;">
+      ¿No tienes cuenta? <a href="#" id="show-signup-link" style="color:var(--doing); text-decoration:underline;">Crear una</a>
+    </p>
+
+    <p style="margin-top:8px; font-size:12px; text-align:center;" id="auth-message"></p>
+  </div>
+</div>
+
+<!-- ========== MODAL DE CREAR CUENTA ========== -->
+<div class="modal-overlay hidden" id="signup-modal">
+  <div class="modal">
+    <h2>Crear cuenta</h2>
+    <p>Regístrate para empezar a colaborar.</p>
+
+    <label class="input-label" for="signup-email">Correo electrónico</label>
+    <input type="email" id="signup-email" placeholder="tucorreo@universidad.edu" autocomplete="email">
+
+    <label class="input-label" for="signup-password">Contraseña</label>
+    <input type="password" id="signup-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+
+    <label class="input-label" for="signup-confirm-password">Confirmar contraseña</label>
+    <input type="password" id="signup-confirm-password" placeholder="Repite la contraseña" autocomplete="new-password">
+
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-primary" id="signup-btn" disabled>Crear cuenta</button>
+    </div>
+
+    <!-- Enlace para volver a login -->
+    <p style="margin-top:14px; font-size:13px; text-align:center;">
+      ¿Ya tienes cuenta? <a href="#" id="show-login-link" style="color:var(--doing); text-decoration:underline;">Inicia sesión</a>
+    </p>
+
+    <p style="margin-top:8px; font-size:12px; text-align:center;" id="signup-message"></p>
   </div>
 </div>
 

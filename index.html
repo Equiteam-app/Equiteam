@@ -165,6 +165,12 @@
   .progress-fill { height: 100%; background: var(--done); border-radius: 3px; transition: width 0.3s ease; }
 
   /* Clases para ocultar/mostrar el panel de métricas */
+  /* Quita el fondo y borde del marco de la columna cuando está colapsada */
+  .metrics-column.collapsed { 
+    background: transparent; 
+    border-color: transparent; 
+    min-height: auto; 
+  }
   .metrics-content { display: block; }
   .metrics-content.hidden { display: none; }
   .metrics-toggle { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; transition: transform 0.2s; }
@@ -358,7 +364,7 @@
 
   // ---------- Motor de Renderizado ----------
   
-  // Reconstruye visualmente el tablero con los datos más recientes
+// Reconstruye visualmente el tablero con los datos más recientes
   function render(){
     const board = document.getElementById('board');
     board.innerHTML = '';
@@ -394,28 +400,36 @@
       colTasks.forEach(task => cardsEl.appendChild(renderCard(task)));
       colEl.appendChild(cardsEl);
 
-      const addRow = document.createElement('div');
-      addRow.className = 'add-row';
-      addRow.innerHTML = `
-        <textarea class="add-input" rows="2" placeholder="Escribe una tarea..."></textarea>
-        <input type="date" class="date-input date-input-dark" title="Fecha límite (opcional)">
-        <button class="add-btn">+ Agregar tarjeta</button>
-      `;
-      const textarea = addRow.querySelector('textarea');
-      const dateInput = addRow.querySelector('input[type="date"]');
-      const addBtn = addRow.querySelector('button');
-      
-      const submit = () => {
-        const text = textarea.value.trim();
-        if(!text) return;
-        addTask(col.id, text, dateInput.value);
-        textarea.value = '';
-        dateInput.value = '';
-      };
-      
-      addBtn.addEventListener('click', submit);
-      textarea.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submit(); } });
-      colEl.appendChild(addRow);
+      /* 
+       * Solo agregamos el formulario de nueva tarea en la columna "Por hacer" ('todo').
+       * Así mantenemos la interfaz limpia y evitamos botones duplicados.
+       */
+      if (col.id === 'todo') {
+        const addRow = document.createElement('div');
+        addRow.className = 'add-row';
+        addRow.innerHTML = `
+          <textarea class="add-input" rows="2" placeholder="Escribe una tarea..."></textarea>
+          <input type="date" class="date-input date-input-dark" title="Fecha límite (opcional)">
+          <button class="add-btn">+ Agregar tarea</button>
+        `;
+        const textarea = addRow.querySelector('textarea');
+        const dateInput = addRow.querySelector('input[type="date"]');
+        const addBtn = addRow.querySelector('button');
+        
+        const submit = () => {
+          const text = textarea.value.trim();
+          if(!text) return;
+          // Se envía directamente a la columna 'todo' por defecto
+          addTask(col.id, text, dateInput.value);
+          textarea.value = '';
+          dateInput.value = '';
+        };
+        
+        addBtn.addEventListener('click', submit);
+        textarea.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submit(); } });
+        colEl.appendChild(addRow);
+      }
+
       board.appendChild(colEl);
     });
     
@@ -553,15 +567,16 @@
     textarea.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); wrapper.querySelector('.edit-save').click(); } if(e.key === 'Escape'){ render(); } });
   }
   
-  // Crea y calcula las métricas de participación para el panel colapsable
+// Crea y calcula las métricas de participación para el panel colapsable
   function createMetricsPanel(){
     const colEl = document.createElement('div');
-    colEl.className = 'column metrics-column';
+    
+    /* Si la variable es verdadera, se inyecta la clase 'collapsed' para borrar el fondo del marco */
+    colEl.className = 'column metrics-column' + (isMetricsCollapsed ? ' collapsed' : '');
     
     const head = document.createElement('div');
     head.className = 'column-head';
     
-    // Botón dinámico (flecha) que indica el estado del panel
     head.innerHTML = `
       <span class="column-dot" style="background:var(--white)"></span>
       <span class="column-title">Participación</span>
@@ -569,20 +584,16 @@
     `;
     colEl.appendChild(head);
 
-    // Contenedor que agrupa las estadísticas para poder ocultarlas fácilmente
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'metrics-content' + (isMetricsCollapsed ? ' hidden' : '');
 
     const listEl = document.createElement('div');
     listEl.className = 'cards';
     
-    // Objeto contador para estructurar la analítica por autor
     const stats = {};
     tasks.forEach(t => {
       if (!t.author) return; 
       if (!stats[t.author]) { stats[t.author] = { done: 0, pending: 0 }; }
-      
-      // Clasificamos y sumamos según la etapa en la que está la tarjeta
       if (t.column_id === 'done') { stats[t.author].done++; } 
       else if (t.column_id === 'doing') { stats[t.author].pending++; }
     });
@@ -619,7 +630,6 @@
     contentWrapper.appendChild(listEl);
     colEl.appendChild(contentWrapper);
     
-    // Función para alternar la visibilidad de la sección
     const toggleBtn = head.querySelector('#metrics-toggle-btn');
     toggleBtn.addEventListener('click', () => {
       isMetricsCollapsed = !isMetricsCollapsed;

@@ -164,12 +164,18 @@
   .progress-bar { height: 6px; background: rgba(0,0,0,.3); border-radius: 3px; margin-top: 12px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--done); border-radius: 3px; transition: width 0.3s ease; }
 
-  /* Clases para ocultar/mostrar el panel de métricas */
-  /* Quita el fondo y borde del marco de la columna cuando está colapsada */
+/* 
+   * Ajusta el fondo al tamaño exacto del encabezado cuando está colapsado.
+   * Eliminamos el fondo transparente para conservar el estilo de la columna.
+   */
   .metrics-column.collapsed { 
-    background: transparent; 
-    border-color: transparent; 
     min-height: auto; 
+    height: max-content; 
+  }
+  
+  /* Quitamos el margen inferior del título cuando está colapsado para que el recuadro quede simétrico */
+  .metrics-column.collapsed .column-head {
+    margin-bottom: 0;
   }
   .metrics-content { display: block; }
   .metrics-content.hidden { display: none; }

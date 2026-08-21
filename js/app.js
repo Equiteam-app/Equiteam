@@ -174,22 +174,80 @@ document.getElementById('profile-save').addEventListener('click', () => {
 
 // ==================== AUTENTICACIÓN (EMAIL + PASSWORD) ====================
 
+// --- Referencias login ---
 const authEmail = document.getElementById('auth-email');
 const authPassword = document.getElementById('auth-password');
 const authLoginBtn = document.getElementById('auth-login-btn');
-const authSignupBtn = document.getElementById('auth-signup-btn');
 const authMessage = document.getElementById('auth-message');
 
-function updateAuthButtons() {
+// --- Referencias signup ---
+const signupEmail = document.getElementById('signup-email');
+const signupPassword = document.getElementById('signup-password');
+const signupConfirmPassword = document.getElementById('signup-confirm-password');
+const signupBtn = document.getElementById('signup-btn');
+const signupMessage = document.getElementById('signup-message');
+
+// --- Referencias modales ---
+const authModal = document.getElementById('auth-modal');
+const signupModal = document.getElementById('signup-modal');
+
+// --- Función para abrir/cerrar modales de autenticación ---
+function openAuthModal() {
+  authModal.classList.remove('hidden');
+  signupModal.classList.add('hidden');
+  setTimeout(() => authEmail.focus(), 50);
+}
+
+function openSignupModal() {
+  signupModal.classList.remove('hidden');
+  authModal.classList.add('hidden');
+  setTimeout(() => signupEmail.focus(), 50);
+}
+
+function closeAuthModal() {
+  authModal.classList.add('hidden');
+}
+
+function closeSignupModal() {
+  signupModal.classList.add('hidden');
+}
+
+// Exportar estas funciones si se usan en otros archivos (no es necesario aquí)
+
+// --- Habilitar/deshabilitar botón de login ---
+function updateLoginButton() {
   const emailOk = authEmail.value.trim().length > 0;
   const passwordOk = authPassword.value.length >= 6;
   authLoginBtn.disabled = !(emailOk && passwordOk);
-  authSignupBtn.disabled = !(emailOk && passwordOk);
 }
 
-authEmail.addEventListener('input', updateAuthButtons);
-authPassword.addEventListener('input', updateAuthButtons);
+authEmail.addEventListener('input', updateLoginButton);
+authPassword.addEventListener('input', updateLoginButton);
 
+// --- Habilitar/deshabilitar botón de signup ---
+function updateSignupButton() {
+  const emailOk = signupEmail.value.trim().length > 0;
+  const passwordOk = signupPassword.value.length >= 6;
+  const confirmOk = signupConfirmPassword.value.length > 0;
+  signupBtn.disabled = !(emailOk && passwordOk && confirmOk);
+}
+
+signupEmail.addEventListener('input', updateSignupButton);
+signupPassword.addEventListener('input', updateSignupButton);
+signupConfirmPassword.addEventListener('input', updateSignupButton);
+
+// --- Enlaces para cambiar entre modales ---
+document.getElementById('show-signup-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  openSignupModal();
+});
+
+document.getElementById('show-login-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  openAuthModal();
+});
+
+// --- Login ---
 authLoginBtn.addEventListener('click', async () => {
   const email = authEmail.value.trim();
   const password = authPassword.value;
@@ -207,31 +265,49 @@ authLoginBtn.addEventListener('click', async () => {
   }
 });
 
-authSignupBtn.addEventListener('click', async () => {
-  const email = authEmail.value.trim();
-  const password = authPassword.value;
-  if (!email || !password) return;
+// --- Signup ---
+signupBtn.addEventListener('click', async () => {
+  const email = signupEmail.value.trim();
+  const password = signupPassword.value;
+  const confirmPassword = signupConfirmPassword.value;
 
-  authMessage.textContent = 'Creando cuenta…';
+  // Validar que las contraseñas coincidan
+  if (password !== confirmPassword) {
+    signupMessage.textContent = 'Las contraseñas no coinciden.';
+    signupConfirmPassword.value = '';
+    signupConfirmPassword.focus();
+    return;
+  }
+
+  signupMessage.textContent = 'Creando cuenta…';
   const result = await signUpWithPassword(email, password);
 
   if (result) {
     if (result.message) {
-      authMessage.textContent = result.message;
+      signupMessage.textContent = result.message;
     } else {
-      authMessage.textContent = 'Error: ' + result.message;
+      signupMessage.textContent = 'Error: ' + result.message;
     }
   } else {
-    authMessage.textContent = '';
-    closeAuthModal();
+    signupMessage.textContent = '';
+    closeSignupModal();
     boot();
   }
 });
 
+// --- Enter en login ---
 authPassword.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
     if (!authLoginBtn.disabled) authLoginBtn.click();
+  }
+});
+
+// --- Enter en signup ---
+signupConfirmPassword.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (!signupBtn.disabled) signupBtn.click();
   }
 });
 

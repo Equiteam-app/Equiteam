@@ -5,6 +5,8 @@
 import { COLUMN_DEFS } from './config.js';
 import { colorForName, initials, timeAgo, escapeHtml } from './utils.js';
 import { moveTask, deleteTask, updateTaskData } from './tasks.js';
+import { COLUMN_DEFS, TAPE_PALETTE } from './config.js';
+
 
 // ==================== NAVEGACIÓN ENTRE PANTALLAS ====================
 export function showHomeScreen() {
@@ -28,7 +30,7 @@ export function setSyncNote(text) {
   document.getElementById('sync-note').textContent = text;
 }
 
-export function applyProfilePill(profile) {
+export function applyProfilePill(profile, authUser) {
   document.getElementById('profile-name').textContent = profile.name;
   document.getElementById('profile-avatar').textContent = initials(profile.name);
   document.getElementById('profile-avatar').style.background = colorForName(profile.name);
@@ -85,29 +87,56 @@ export function showToast(message) {
 }
 
 // ==================== MODALES ====================
-export function openProfileModal(prefill = '') {
+export function openProfileModal(profile, authUser) {
   const overlay = document.getElementById('profile-modal');
   const input = document.getElementById('profile-input');
   const saveBtn = document.getElementById('profile-save');
-  input.value = prefill;
+  const guestMessage = document.getElementById('guest-message');
+  const signupBtn = document.getElementById('profile-signup-btn');
+  const colorOptions = document.getElementById('profile-color-options');
+
+  // Limpiar opciones de color
+  colorOptions.innerHTML = '';
+
+  // Determinar color seleccionado actual
+  const selectedColor = profile?.color || 
+    (profile?.name ? colorForName(profile.name) : 
+    (authUser?.email ? colorForName(authUser.email) : '#d9a441'));
+
+  // Generar círculos de color usando TAPE_PALETTE
+  TAPE_PALETTE.forEach(color => {
+    const circle = document.createElement('div');
+    circle.className = 'color-circle' + (color === selectedColor ? ' selected' : '');
+    circle.style.background = color;
+    circle.dataset.color = color;
+    circle.addEventListener('click', () => {
+      document.querySelectorAll('.color-circle').forEach(c => c.classList.remove('selected'));
+      circle.classList.add('selected');
+      overlay.dataset.selectedColor = color;
+    });
+    colorOptions.appendChild(circle);
+  });
+
+  // Guardar color seleccionado en el modal
+  overlay.dataset.selectedColor = selectedColor;
+
+  // Mostrar mensaje de invitado si no hay usuario autenticado
+  if (!authUser) {
+    guestMessage.style.display = 'block';
+    signupBtn.onclick = () => {
+      closeProfileModal();
+      openAuthModal();
+    };
+  } else {
+    guestMessage.style.display = 'none';
+  }
+
+  // Rellenar campo de nombre
+  input.value = profile?.name || '';
   saveBtn.disabled = !input.value.trim();
+
   overlay.classList.remove('hidden');
   setTimeout(() => input.focus(), 50);
-}
-
-export function closeProfileModal() {
-  document.getElementById('profile-modal').classList.add('hidden');
-}
-
-export function openAddTaskModal() {
-  document.getElementById('add-task-modal').classList.remove('hidden');
-  setTimeout(() => document.getElementById('new-task-text').focus(), 50);
-}
-
-export function closeAddTaskModal() {
-  document.getElementById('new-task-text').value = '';
-  document.getElementById('new-task-date').value = '';
-  document.getElementById('add-task-modal').classList.add('hidden');
 }
 
 // Modal para CREAR un tablero nuevo (ya no funciona como selector/lista)
@@ -130,6 +159,15 @@ export function openAuthModal() {
 
 export function closeAuthModal() {
   document.getElementById('auth-modal').classList.add('hidden');
+}
+
+export function openSignupModal() {
+  document.getElementById('signup-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('signup-email').focus(), 50);
+}
+
+export function closeSignupModal() {
+  document.getElementById('signup-modal').classList.add('hidden');
 }
 
 export function setAuthMessage(msg) {
@@ -223,7 +261,7 @@ function renderCard(task, profile, refresh, projectId) {
   if (isDone) {
     tapeHtml = '<div class="tape" style="background:#369C35; color:#ffffff;">Hecho</div>';
   } else if (task.author) {
-    const tapeColor = colorForName(task.author);
+const tapeColor = task.author ? (profile?.color || colorForName(task.author)) : 'rgba(255,255,255,.28)';
     tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.author)}</div>`;
   } else {
     tapeHtml = '<div class="tape" style="background:rgba(255,255,255,.28)"></div>';

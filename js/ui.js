@@ -185,17 +185,6 @@ export function closeSignupModal() {
   document.getElementById('signup-modal').classList.add('hidden');
 }
 
-export function openAddTaskModal() {
-  document.getElementById('new-task-text').value = '';
-  document.getElementById('new-task-date').value = '';
-  document.getElementById('add-task-modal').classList.remove('hidden');
-  setTimeout(() => document.getElementById('new-task-text').focus(), 50);
-}
-
-export function closeAddTaskModal() {
-  document.getElementById('add-task-modal').classList.add('hidden');
-}
-
 export function setAuthMessage(msg) {
   document.getElementById('auth-message').textContent = msg;
 }

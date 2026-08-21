@@ -2,8 +2,8 @@ EquiTeam
 Servicio para la organizacion y mejora del rendimiento en trabajos grupales.
 Demo: equiteam-app.github.io/Equiteam
 ---
-Acerca de
-EquiTeam es un tablero colaborativo tipo Kanban orientado a equipos de trabajo. Permite crear tableros, gestionar tareas en tres estados (Por hacer, En progreso, Hecho), asignar responsables y visualizar metricas de participacion del equipo.
+Acerca de EquiTeam 
+Es un tablero colaborativo tipo Kanban orientado a equipos de trabajo. Permite crear tableros, gestionar tareas en tres estados (Por hacer, En progreso, Hecho), asignar responsables y visualizar metricas de participacion del equipo.
 Funcionalidades principales:
 Creacion de tableros con un solo click.
 Arrastre de tarjetas entre columnas (drag and drop).

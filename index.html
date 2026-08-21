@@ -6,8 +6,10 @@
 <title>Tablero EquiTeam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Importación de la librería oficial de Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+  /* Variables de colores y sombras para mantener consistencia en todo el diseño */
   :root{
     --bg:#1f3a34;
     --card:#f6efe1;
@@ -24,6 +26,8 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  
+  /* Fondo general simulando una pizarra verde oscura */
   body{
     background:
       radial-gradient(ellipse at top left, rgba(255,255,255,.04), transparent 55%),
@@ -34,6 +38,7 @@
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
   }
+  /* Patrón de puntos sutil de fondo */
   body::before{
     content:"";
     position:fixed; inset:0;
@@ -43,8 +48,10 @@
     z-index:0;
   }
   
+  /* Contenedor principal ensanchado para albergar 4 columnas */
   #app{position:relative; z-index:1; max-width:1400px; margin:0 auto; padding:20px 20px 60px;}
 
+  /* Encabezado del tablero */
   .board-header{
     display:flex; align-items:flex-end; justify-content:space-between;
     gap:16px; flex-wrap:wrap;
@@ -52,16 +59,11 @@
     border-bottom:1px dashed rgba(255,255,255,.18);
     margin-bottom:26px;
   }
-  .eyebrow{
-    display:block; font-size:12px; letter-spacing:.14em; text-transform:uppercase;
-    color:var(--todo); font-weight:600; margin-bottom:4px;
-  }
-  h1{
-    font-family:'Fraunces',serif; font-weight:600; font-size:clamp(28px,4vw,40px);
-    margin:0; color:var(--white); letter-spacing:-.01em;
-  }
+  .eyebrow{ display:block; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--todo); font-weight:600; margin-bottom:4px; }
+  h1{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(28px,4vw,40px); margin:0; color:var(--white); letter-spacing:-.01em; }
   .subtitle{color:var(--muted); font-size:14px; margin-top:6px;}
 
+  /* Estilos de la pastilla del perfil de usuario */
   .profile-pill{
     display:flex; align-items:center; gap:10px;
     background:rgba(255,255,255,.06);
@@ -70,40 +72,28 @@
     cursor:pointer; transition:background .15s ease;
   }
   .profile-pill:hover{background:rgba(255,255,255,.11);}
-  .avatar{
-    width:34px; height:34px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Fraunces',serif; font-weight:700; font-size:14px; color:#20140c;
-    flex-shrink:0;
-  }
+  .avatar{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:14px; color:#20140c; flex-shrink:0; }
   .profile-pill .name{font-size:14px; font-weight:600;}
   .profile-pill .hint{font-size:11px; color:var(--muted); display:block; margin-top:-2px;}
 
   .sync-note{font-size:12px; color:var(--muted); text-align:right; margin-top:2px;}
 
+  /* Rejilla para alinear las columnas, responsiva en móviles */
   .board{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
   @media (max-width:1024px){ .board{grid-template-columns:repeat(2,1fr);} }
   @media (max-width:600px){ .board{grid-template-columns:1fr;} }
 
-  .column{
-    background:rgba(0,0,0,.14);
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:16px;
-    padding:14px;
-    min-height:200px;
-    display:flex; flex-direction:column;
-  }
+  /* Estilos base de cada columna */
+  .column{ background:rgba(0,0,0,.14); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px; min-height:200px; display:flex; flex-direction:column; }
   .column.drag-over{outline:2px dashed rgba(255,255,255,.5); outline-offset:2px;}
   .column-head{display:flex; align-items:center; gap:9px; margin-bottom:12px; padding:0 2px;}
   .column-dot{width:10px; height:10px; border-radius:50%;}
   .column-title{font-family:'Fraunces',serif; font-weight:600; font-size:17px; flex:1;}
-  .column-count{
-    font-size:12px; color:var(--muted); background:rgba(255,255,255,.07);
-    padding:2px 9px; border-radius:999px;
-  }
+  .column-count{ font-size:12px; color:var(--muted); background:rgba(255,255,255,.07); padding:2px 9px; border-radius:999px; }
 
   .cards{display:flex; flex-direction:column; gap:10px; min-height:40px; flex:1;}
 
+  /* Tarjetas individuales */
   .card{
     background:var(--card); color:var(--ink); border-radius:10px;
     padding:13px 13px 10px; box-shadow:var(--shadow); position:relative;
@@ -112,10 +102,9 @@
   }
   .card:active{cursor:grabbing;}
   .card.dragging{opacity:.35;}
-  .card--done{
-    box-shadow:var(--shadow), 0 0 0 2px rgba(54,156,53,.45);
-  }
+  .card--done{ box-shadow:var(--shadow), 0 0 0 2px rgba(54,156,53,.45); }
   
+  /* Cinta con el nombre del integrante o estado "Hecho" */
   .tape{
     position:absolute; top:-10px; left:16px; min-width:40px; max-width:150px; height:20px;
     border-radius:4px; opacity:.95; transform:rotate(-3deg);
@@ -126,37 +115,30 @@
     font-family:'Work Sans',sans-serif;
   }
   
-  /* Clases nuevas para las alertas visuales de las fechas */
+  /* Etiquetas visuales para las fechas límite */
   .badge-due { font-size: 11.5px; font-weight: 600; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 5px; }
   .badge-due.overdue { background: rgba(192, 86, 63, 0.15); color: var(--danger); }
   .badge-due.warning { background: rgba(217, 164, 65, 0.2); color: #b3822a; }
   .badge-due.ok { color: var(--ink-soft); font-weight: 500; }
 
   .card-text{font-size:14.5px; line-height:1.4; margin:6px 0 10px; word-break:break-word; white-space:pre-wrap;}
-  .edit-wrapper{margin:6px 0 10px; display: flex; flex-direction: column; gap: 8px;}
   
-  .add-input, .edit-textarea, .date-input {
-    width:100%; font-family:inherit; color:var(--ink);
-    background:var(--white); border:1px solid var(--card-line); border-radius:8px;
-    padding:8px 9px; line-height:1.4; font-size: 13.5px;
-  }
+  /* Contenedores y botones del modo de edición de tarjetas */
+  .edit-wrapper{margin:6px 0 10px; display: flex; flex-direction: column; gap: 8px;}
+  .add-input, .edit-textarea, .date-input { width:100%; font-family:inherit; color:var(--ink); background:var(--white); border:1px solid var(--card-line); border-radius:8px; padding:8px 9px; line-height:1.4; font-size: 13.5px; }
   .add-input{ background:rgba(255,255,255,.07); color:var(--white); border-color:rgba(255,255,255,.16); resize:none; }
   .add-input::placeholder{color:rgba(255,255,255,.4);}
   .add-input:focus, .edit-textarea:focus, .date-input:focus { outline:2px solid var(--doing); outline-offset:1px; }
-  
-  /* Ajuste para el input de fecha en el modo oscuro */
   .date-input-dark { background:rgba(255,255,255,.07); color:var(--white); border:1px solid rgba(255,255,255,.16); margin-top: 6px; }
   
   .edit-actions{display:flex; justify-content:flex-end; gap:6px;}
-  .edit-actions button{
-    font-family:inherit; font-size:12.5px; font-weight:600; padding:6px 11px;
-    border-radius:7px; border:none; cursor:pointer;
-  }
+  .edit-actions button{ font-family:inherit; font-size:12.5px; font-weight:600; padding:6px 11px; border-radius:7px; border:none; cursor:pointer; }
   .edit-cancel{background:rgba(0,0,0,.06); color:var(--ink-soft);}
   .edit-save{background:var(--ink); color:var(--white);}
   .card-meta{display:flex; align-items:center; justify-content:flex-end; gap:8px;}
   .card-time{font-size:10.5px; color:var(--ink-soft);}
 
+  /* Menú desplegable de cada tarjeta */
   .card-actions{position:relative;}
   .menu-btn{ background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:16px; padding:2px 6px; border-radius:6px; line-height:1; }
   .menu-btn:hover{background:rgba(0,0,0,.06);}
@@ -173,7 +155,7 @@
 
   .empty-hint{ color:var(--muted); font-size:12.5px; text-align:center; padding:14px 4px; border:1px dashed rgba(255,255,255,.16); border-radius:10px; }
 
-  /* Métricas */
+  /* Columna de Métricas (Analítica) */
   .metrics-column { background: rgba(0,0,0,.25); border-color: rgba(255,255,255,.05); }
   .metric-item { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); padding: 14px; border-radius: 10px; margin-bottom: 10px; }
   .metric-name { font-weight: 600; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--white); }
@@ -182,7 +164,14 @@
   .progress-bar { height: 6px; background: rgba(0,0,0,.3); border-radius: 3px; margin-top: 12px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--done); border-radius: 3px; transition: width 0.3s ease; }
 
-  /* Modales */
+  /* Clases para ocultar/mostrar el panel de métricas */
+  .metrics-content { display: block; }
+  .metrics-content.hidden { display: none; }
+  .metrics-toggle { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; transition: transform 0.2s; }
+  .metrics-toggle:hover { color: var(--white); }
+  .metrics-toggle.collapsed { transform: rotate(-90deg); }
+
+  /* Ventanas modales (ej. Perfil inicial) */
   .modal-overlay{ position:fixed; inset:0; background:rgba(10,18,16,.72); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
   .modal-overlay.hidden{display:none;}
   .modal{ background:var(--card); color:var(--ink); border-radius:16px; padding:26px; width:100%; max-width:360px; box-shadow:var(--shadow); }
@@ -193,6 +182,8 @@
   .modal-actions{display:flex; gap:8px;}
   .btn-primary{ flex:1; padding:11px; border-radius:9px; border:none; background:var(--ink); color:var(--white); font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
   .btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+  
+  /* Pantalla de carga y errores de configuración */
   .loading-screen{ position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; z-index:100; color:var(--muted); font-size:13px; }
   .loading-screen.hidden{display:none;}
   .spinner{ width:28px; height:28px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:var(--todo); animation:spin .8s linear infinite; }
@@ -209,6 +200,7 @@
 <body>
 
 <script>
+  // Constantes de conexión a Supabase
   const SUPABASE_URL = 'https://dasrrzlyfzoqdtlvbdbt.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_QYmfscKalC7yPA77LiwBgg_iY6FE1_P';
 </script>
@@ -260,6 +252,7 @@
 
 <script>
 (function(){
+  // Verificación de credenciales válidas
   if(!SUPABASE_URL || SUPABASE_URL.includes('PEGA_AQUI') || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('PEGA_AQUI')){
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('config-warning').classList.remove('hidden');
@@ -269,6 +262,7 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const PROFILE_KEY = 'equiteam-profile';
 
+  // Configuración de las columnas operativas
   const COLUMN_DEFS = [
     {id:'todo',  title:'Por hacer',    accent:'var(--todo)'},
     {id:'doing', title:'En progreso',  accent:'var(--doing)'},
@@ -276,21 +270,29 @@
   ];
   const TAPE_PALETTE = ['#d9a441','#5b87a6','#7fa65b','#c0563f','#8a6fb0','#4f9d8a','#c77b9a'];
 
+  // Variables de estado del tablero
   let tasks = [];
   let profile = null;
   let draggingId = null;
+  // Controla si el panel de métricas está colapsado o abierto por defecto
+  let isMetricsCollapsed = false;
 
+  // Genera un color constante basado en el texto del nombre
   function colorForName(name){
     let hash = 0;
     for(let i=0;i<name.length;i++){ hash = name.charCodeAt(i) + ((hash<<5)-hash); }
     return TAPE_PALETTE[Math.abs(hash) % TAPE_PALETTE.length];
   }
+  
+  // Extrae las iniciales del nombre para el avatar
   function initials(name){
     const parts = name.trim().split(/\s+/).filter(Boolean);
     if(parts.length === 0) return '--';
     if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
+  
+  // Formatea fechas en texto amigable ("hace 5 min")
   function timeAgo(iso){
     const s = Math.floor((Date.now() - new Date(iso).getTime())/1000);
     if(s < 60) return 'justo ahora';
@@ -300,44 +302,52 @@
     if(h < 24) return 'hace ' + h + ' h';
     return 'hace ' + Math.floor(h/24) + ' d';
   }
+  
+  // Previene inyección de código (XSS) al mostrar texto guardado
   function escapeHtml(str){
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
+  
+  // Actualiza el texto de estatus de sincronización
   function setSyncNote(text){
     const el = document.getElementById('sync-note');
     if(el) el.textContent = text;
   }
 
-  // ---------- Capa de Datos ----------
+  // ---------- Capa de Datos (Base de Datos) ----------
+  
+  // Obtiene todas las tareas ordenadas por fecha de creación
   async function fetchTasks(){
     const { data, error } = await sb.from('tasks').select('*').order('created_at', {ascending:true});
     if(error){ setSyncNote('Error al cargar'); console.error(error); return []; }
     return data;
   }
   
-  /* Modificamos el guardado para incluir due_date en la petición a la BD */
+  // Inserta nueva tarea, enviando due_date solo si fue seleccionada
   async function addTask(columnId, text, dueDate){
     const payload = { text, column_id: columnId, author: null };
-    if (dueDate) payload.due_date = dueDate; // Solo se envía si el usuario seleccionó una fecha
+    if (dueDate) payload.due_date = dueDate; 
     
     const { error } = await sb.from('tasks').insert(payload);
     if(error){ setSyncNote('No se pudo guardar'); console.error(error); }
   }
   
+  // Actualiza el estado de la tarea y le asigna el autor si sale de "Por hacer"
   async function moveTask(id, columnId){
     const updates = { column_id: columnId, author: columnId === 'todo' ? null : profile.name };
     const { error } = await sb.from('tasks').update(updates).eq('id', id);
     if(error){ setSyncNote('No se pudo mover'); console.error(error); }
   }
   
+  // Borra permanentemente una tarea
   async function deleteTask(id){
     const { error } = await sb.from('tasks').delete().eq('id', id);
     if(error){ setSyncNote('No se pudo eliminar'); console.error(error); }
   }
   
-  /* Modificamos la actualización para poder guardar una nueva fecha desde el editor */
+  // Guarda las ediciones de texto y la nueva fecha límite
   async function updateTaskData(id, text, dueDate){
     const payload = { text };
     if (dueDate !== undefined) payload.due_date = dueDate || null; 
@@ -347,6 +357,8 @@
   }
 
   // ---------- Motor de Renderizado ----------
+  
+  // Reconstruye visualmente el tablero con los datos más recientes
   function render(){
     const board = document.getElementById('board');
     board.innerHTML = '';
@@ -384,7 +396,6 @@
 
       const addRow = document.createElement('div');
       addRow.className = 'add-row';
-      /* Se agregó un input nativo tipo "date" para establecer el límite */
       addRow.innerHTML = `
         <textarea class="add-input" rows="2" placeholder="Escribe una tarea..."></textarea>
         <input type="date" class="date-input date-input-dark" title="Fecha límite (opcional)">
@@ -411,6 +422,7 @@
     board.appendChild(createMetricsPanel());
   }
 
+  // Genera el HTML para cada tarjeta individual
   function renderCard(task){
     const card = document.createElement('div');
     const isDone = task.column_id === 'done';
@@ -420,6 +432,7 @@
     card.dataset.id = task.id;
 
     let tapeHtml = '';
+    // Asignación de cinta de color. Si está lista forzamos el color #369C35
     if (isDone) {
       tapeHtml = `<div class="tape" style="background:#369C35; color:#ffffff;">Hecho</div>`;
     } else {
@@ -429,32 +442,27 @@
         : `<div class="tape" style="background:${tapeColor}"></div>`;
     }
 
-    /* 
-     * Lógica de Alertas Visuales (Evaluación Matemática de Fechas) 
-     * Compara la fecha actual con la fecha de la base de datos para asignar 
-     * clases CSS de advertencia (vencida, por vencer o a tiempo).
-     */
+    // Calcula y determina el tipo de alerta visual para la fecha de vencimiento
     let alertHtml = '';
     if (task.due_date) {
       const due = new Date(task.due_date);
-      // Forzamos la zona horaria añadiendo el desfase para evitar que marque un día antes por error
+      // Ajuste de zona horaria para evitar mostrar un día previo por error del huso local
       due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
       
       if (!isDone) {
         const now = new Date();
-        now.setHours(0,0,0,0); // Normalizamos el día actual a la medianoche para una resta limpia
+        now.setHours(0,0,0,0); 
         const diffMs = due.getTime() - now.getTime();
         const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
         if (diffDays < 0) {
           alertHtml = `<div class="badge-due overdue">⚠️ Venció el ${due.toLocaleDateString()}</div>`;
-        } else if (diffDays <= 2) { // Rango de 48 horas como métrica de urgencia
+        } else if (diffDays <= 2) {
           alertHtml = `<div class="badge-due warning">⏱️ Vence pronto (${due.toLocaleDateString()})</div>`;
         } else {
           alertHtml = `<div class="badge-due ok">📅 Para el ${due.toLocaleDateString()}</div>`;
         }
       } else {
-        // Si ya está completada, se muestra de forma sutil sin colores de alerta
         alertHtml = `<div class="badge-due ok">✅ Era para el ${due.toLocaleDateString()}</div>`;
       }
     }
@@ -487,6 +495,7 @@
 
     const menuBtn = card.querySelector('.menu-btn');
     const menu = card.querySelector('.menu');
+    
     menuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       document.querySelectorAll('.menu.open').forEach(m => { if(m !== menu) m.classList.remove('open'); });
@@ -500,6 +509,7 @@
     menu.querySelector('[data-edit]').addEventListener('click', (e) => {
       e.stopPropagation(); menu.classList.remove('open'); startEdit(card, task);
     });
+    
     menu.querySelector('[data-delete]').addEventListener('click', (e) => {
       e.stopPropagation(); deleteTask(task.id); menu.classList.remove('open');
     });
@@ -507,6 +517,7 @@
     return card;
   }
 
+  // Activa el modo in-line de edición de la tarjeta
   function startEdit(card, task){
     const textEl = card.querySelector('.card-text');
     card.draggable = false;
@@ -514,7 +525,6 @@
     const wrapper = document.createElement('div');
     wrapper.className = 'edit-wrapper';
     
-    /* Inyectamos los campos de texto y fecha en estado de edición para capturar los nuevos valores */
     wrapper.innerHTML = `
       <textarea class="edit-textarea" rows="3"></textarea>
       <input type="date" class="date-input" style="font-size: 13px;" value="${task.due_date || ''}">
@@ -543,25 +553,36 @@
     textarea.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); wrapper.querySelector('.edit-save').click(); } if(e.key === 'Escape'){ render(); } });
   }
   
+  // Crea y calcula las métricas de participación para el panel colapsable
   function createMetricsPanel(){
     const colEl = document.createElement('div');
     colEl.className = 'column metrics-column';
     
     const head = document.createElement('div');
     head.className = 'column-head';
+    
+    // Botón dinámico (flecha) que indica el estado del panel
     head.innerHTML = `
       <span class="column-dot" style="background:var(--white)"></span>
       <span class="column-title">Participación</span>
+      <button class="metrics-toggle ${isMetricsCollapsed ? 'collapsed' : ''}" id="metrics-toggle-btn">▼</button>
     `;
     colEl.appendChild(head);
+
+    // Contenedor que agrupa las estadísticas para poder ocultarlas fácilmente
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'metrics-content' + (isMetricsCollapsed ? ' hidden' : '');
 
     const listEl = document.createElement('div');
     listEl.className = 'cards';
     
+    // Objeto contador para estructurar la analítica por autor
     const stats = {};
     tasks.forEach(t => {
       if (!t.author) return; 
       if (!stats[t.author]) { stats[t.author] = { done: 0, pending: 0 }; }
+      
+      // Clasificamos y sumamos según la etapa en la que está la tarjeta
       if (t.column_id === 'done') { stats[t.author].done++; } 
       else if (t.column_id === 'doing') { stats[t.author].pending++; }
     });
@@ -594,19 +615,33 @@
         listEl.appendChild(item);
       });
     }
-    colEl.appendChild(listEl);
+    
+    contentWrapper.appendChild(listEl);
+    colEl.appendChild(contentWrapper);
+    
+    // Función para alternar la visibilidad de la sección
+    const toggleBtn = head.querySelector('#metrics-toggle-btn');
+    toggleBtn.addEventListener('click', () => {
+      isMetricsCollapsed = !isMetricsCollapsed;
+      render(); 
+    });
+
     return colEl;
   }
 
+  // Cierra menús abiertos al hacer clic fuera de ellos
   document.addEventListener('click', () => { document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open')); });
 
+  // Gestión de perfil almacenada en el LocalStorage
   function loadProfile(){ try{ const raw = localStorage.getItem(PROFILE_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; } }
   function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+  
   function applyProfilePill(){
     document.getElementById('profile-name').textContent = profile.name;
     document.getElementById('profile-avatar').textContent = initials(profile.name);
     document.getElementById('profile-avatar').style.background = colorForName(profile.name);
   }
+  
   function openProfileModal(prefill){
     const overlay = document.getElementById('profile-modal');
     const input = document.getElementById('profile-input');
@@ -616,10 +651,12 @@
     overlay.classList.remove('hidden');
     setTimeout(() => input.focus(), 50);
   }
+  
   function closeProfileModal(){ document.getElementById('profile-modal').classList.add('hidden'); }
 
   document.getElementById('profile-input').addEventListener('input', (e) => { document.getElementById('profile-save').disabled = !e.target.value.trim(); });
   document.getElementById('profile-input').addEventListener('keydown', (e) => { if(e.key === 'Enter' && e.target.value.trim()) document.getElementById('profile-save').click(); });
+  
   document.getElementById('profile-save').addEventListener('click', () => {
     const name = document.getElementById('profile-input').value.trim();
     if(!name) return;
@@ -629,8 +666,10 @@
     closeProfileModal();
     render(); 
   });
+  
   document.getElementById('profile-pill').addEventListener('click', () => { openProfileModal(profile ? profile.name : ''); });
 
+  // ---------- Suscripción a Cambios en Tiempo Real (Supabase) ----------
   function subscribeRealtime(){
     sb.channel('tasks-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, async () => {
         tasks = await fetchTasks();
@@ -639,18 +678,23 @@
       }).subscribe();
   }
 
+  // ---------- Inicio de la Aplicación ----------
   async function boot(){
     profile = loadProfile();
     tasks = await fetchTasks();
+    
+    // Ocultamos el ícono de carga y mostramos el tablero al terminar el proceso inicial
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('app').style.display = 'block';
 
     if(profile && profile.name){ applyProfilePill(); } else { openProfileModal(''); }
+    
     render();
     setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
     subscribeRealtime();
   }
 
+  // Ejecutamos el arranque inicial
   boot();
 })();
 </script>

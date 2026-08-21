@@ -76,17 +76,35 @@
     <footer>Este tablero se guarda en Supabase y lo ven solo quienes tengan el enlace de invitación.</footer>
   </div>
 
-  <!-- Modal de perfil (solo nombre, sin cuenta) -->
-  <div class="modal-overlay hidden" id="profile-modal">
-    <div class="modal">
-      <h2>¿Cómo te llamas?</h2>
-      <p>No necesitas cuenta ni contraseña para participar en un tablero. Tu nombre solo se guarda en este navegador y se usa para identificar tus tarjetas.</p>
-      <input type="text" id="profile-input" maxlength="30" placeholder="Tu nombre">
-      <div class="modal-actions">
-        <button class="btn-primary" id="profile-save" disabled>Guardar</button>
-      </div>
+<!-- Modal de perfil -->
+<div class="modal-overlay hidden" id="profile-modal">
+  <div class="modal">
+    <h2>Tu perfil</h2>
+    <p>Personaliza cómo te ven tus compañeros.</p>
+
+    <!-- Campo de nombre -->
+    <label class="input-label" for="profile-input">Nombre</label>
+    <input type="text" id="profile-input" maxlength="30" placeholder="Tu nombre">
+
+    <!-- Selector de color de avatar -->
+    <label class="input-label" style="margin-top:12px;">Color del avatar</label>
+    <div class="color-options" id="profile-color-options">
+      <!-- Los colores se generan dinámicamente con JS -->
+    </div>
+
+    <!-- Mensaje para invitados -->
+    <div id="guest-message" style="display:none; margin-top:12px; padding:10px; background:rgba(255,255,255,.05); border-radius:8px;">
+      <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 8px;">
+        Estás como invitado. Crea una cuenta para guardar tus tableros y sincronizarlos.
+      </p>
+      <button class="btn-primary" id="profile-signup-btn" style="width:100%;">Crear cuenta</button>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-primary" id="profile-save" disabled>Guardar</button>
     </div>
   </div>
+</div>
 
   <!-- Modal para CREAR un tablero nuevo (requiere cuenta) -->
   <div class="modal-overlay hidden" id="project-modal">

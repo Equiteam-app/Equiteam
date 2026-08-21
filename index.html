@@ -255,7 +255,30 @@
     </div>
   </div>
 </div>
-
+  
+<!-- 
+  Modal para agregar nueva tarea.
+  Usa 'modal-overlay' para oscurecer el fondo y centrar el contenido.
+-->
+<div class="modal-overlay hidden" id="add-task-modal">
+  <div class="modal">
+    <h2>Nueva tarea</h2>
+    <p>Escribe los detalles de la actividad a realizar.</p>
+    
+    <!-- Área de texto para describir la tarea -->
+    <textarea id="new-task-text" class="edit-textarea" rows="3" placeholder="Ej. Redactar la justificación..."></textarea>
+    
+    <!-- Input nativo de fecha para el límite -->
+    <input type="date" id="new-task-date" class="date-input date-input-dark" title="Fecha límite (opcional)">
+    
+    <!-- Botones de acción del modal -->
+    <div class="modal-actions" style="margin-top: 14px;">
+      <button class="edit-cancel" id="add-task-cancel" style="flex: 1; padding: 11px; border-radius: 9px;">Cancelar</button>
+      <button class="btn-primary" id="add-task-save">Agregar tarea</button>
+    </div>
+  </div>
+</div>
+  
 <script>
 (function(){
   // Verificación de credenciales válidas
@@ -400,33 +423,24 @@
       colTasks.forEach(task => cardsEl.appendChild(renderCard(task)));
       colEl.appendChild(cardsEl);
 
-      /* 
-       * Solo agregamos el formulario de nueva tarea en la columna "Por hacer" ('todo').
-       * Así mantenemos la interfaz limpia y evitamos botones duplicados.
+/* 
+       * Colocamos un único botón limpio en la columna "Por hacer".
+       * Al presionarlo, abre el modal en el centro de la pantalla.
        */
       if (col.id === 'todo') {
         const addRow = document.createElement('div');
         addRow.className = 'add-row';
-        addRow.innerHTML = `
-          <textarea class="add-input" rows="2" placeholder="Escribe una tarea..."></textarea>
-          <input type="date" class="date-input date-input-dark" title="Fecha límite (opcional)">
-          <button class="add-btn">+ Agregar tarea</button>
-        `;
-        const textarea = addRow.querySelector('textarea');
-        const dateInput = addRow.querySelector('input[type="date"]');
+        addRow.innerHTML = `<button class="add-btn">+ Nueva tarea</button>`;
+        
         const addBtn = addRow.querySelector('button');
         
-        const submit = () => {
-          const text = textarea.value.trim();
-          if(!text) return;
-          // Se envía directamente a la columna 'todo' por defecto
-          addTask(col.id, text, dateInput.value);
-          textarea.value = '';
-          dateInput.value = '';
-        };
+        // Evento que quita la clase 'hidden' para mostrar la ventana oscura
+        addBtn.addEventListener('click', () => {
+          document.getElementById('add-task-modal').classList.remove('hidden');
+          // Pequeño retraso para asegurar que el cursor se posicione en el texto al abrir
+          setTimeout(() => document.getElementById('new-task-text').focus(), 50);
+        });
         
-        addBtn.addEventListener('click', submit);
-        textarea.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submit(); } });
         colEl.appendChild(addRow);
       }
 
@@ -679,6 +693,46 @@
   
   document.getElementById('profile-pill').addEventListener('click', () => { openProfileModal(profile ? profile.name : ''); });
 
+  // ---------- Lógica del Modal de Nueva Tarea ----------
+  
+  // Seleccionamos los elementos del DOM que necesitamos controlar
+  const addTaskModal = document.getElementById('add-task-modal');
+  const addTaskText = document.getElementById('new-task-text');
+  const addTaskDate = document.getElementById('new-task-date');
+  
+  // Función centralizada para limpiar los campos y ocultar la ventana
+  function closeAddTaskModal() {
+    addTaskText.value = '';
+    addTaskDate.value = '';
+    addTaskModal.classList.add('hidden');
+  }
+
+  // Cierra el modal sin hacer cambios al presionar "Cancelar"
+  document.getElementById('add-task-cancel').addEventListener('click', closeAddTaskModal);
+
+  // Guarda los datos en la base de datos al presionar "Agregar tarea"
+  document.getElementById('add-task-save').addEventListener('click', () => {
+    const text = addTaskText.value.trim();
+    if(!text) return; // Evita enviar tareas vacías
+    
+    // Inserta la tarea en la columna 'todo' por defecto
+    addTask('todo', text, addTaskDate.value);
+    closeAddTaskModal();
+  });
+
+  // Escucha el teclado para atajos rápidos
+  addTaskText.addEventListener('keydown', (e) => { 
+    // Enter para guardar (sin la tecla shift)
+    if(e.key === 'Enter' && !e.shiftKey) { 
+      e.preventDefault(); 
+      document.getElementById('add-task-save').click(); 
+    }
+    // Escape para cerrar la ventana rápidamente
+    if(e.key === 'Escape') {
+      closeAddTaskModal();
+    }
+  });
+  
   // ---------- Suscripción a Cambios en Tiempo Real (Supabase) ----------
   function subscribeRealtime(){
     sb.channel('tasks-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, async () => {

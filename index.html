@@ -62,6 +62,11 @@
     padding:7px 14px 7px 7px; border-radius:999px;
     cursor:pointer; transition:background .15s ease;
   }
+  
+  <button id="logout-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;text-decoration:underline;">
+  Cerrar sesión
+</button>
+  
   .profile-pill:hover{background:rgba(255,255,255,.11);}
   .avatar{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:14px; color:#20140c; flex-shrink:0; }
   .profile-pill .name{font-size:14px; font-weight:600;}
@@ -173,24 +178,59 @@
   .btn-primary{ flex:1; padding:11px; border-radius:9px; border:none; background:var(--ink); color:var(--white); font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
   .btn-primary:disabled{opacity:.4; cursor:not-allowed;}
   
-  .project-item{
-    display:block;
-    width:100%;
-    text-align:left;
-    margin-bottom:8px;
-    padding:10px 12px;
-    border-radius:8px;
-    border:1px solid var(--card-line);
-    background:var(--white);
-    color:var(--ink);
-    cursor:pointer;
-    font-family:inherit;
-    font-size:14px;
-  }
-  .project-item:hover{
-    background:rgba(0,0,0,.04);
-  }
+/* ========== GRID DE PROYECTOS ========== */
+#project-list {
+  display: grid;                                  /* Activa el grid */
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* columnas fluidas */
+  gap: 10px;                                      /* espacio entre tarjetas */
+  margin-bottom: 16px;
+  max-height: 300px;                              /* altura máxima con scroll */
+  overflow-y: auto;                               /* scroll vertical si hay muchos */
+  padding: 2px;
+}
 
+.project-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 80px;                               /* altura mínima de cada tarjeta */
+  padding: 12px;
+  margin: 0;                                      /* eliminamos márgenes que sobren */
+  border-radius: 10px;
+  border: 1px solid var(--card-line);
+  background: var(--white);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-word;                         /* permite saltos de línea en nombres largos */
+  transition: background 0.15s ease;
+}
+
+.project-item:hover {
+  background: rgba(0,0,0,.04);                    /* efecto hover */
+}
+
+/* Estilos para el modal de autenticación */
+#auth-modal input[type="email"] {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--card-line);
+  font-family: inherit;
+  font-size: 14.5px;
+  margin-bottom: 14px;
+}
+#auth-modal input:focus {
+  outline: 2px solid var(--doing);
+  outline-offset: 1px;
+}
+#auth-message {
+  color: var(--ink-soft);
+}
+  
   .loading-screen{ position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; z-index:100; color:var(--muted); font-size:13px; }
   .loading-screen.hidden{display:none;}
   .spinner{ width:28px; height:28px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:var(--todo); animation:spin .8s linear infinite; }
@@ -245,6 +285,19 @@
   <footer>Este tablero se guarda en Supabase y lo ven todas las personas que abran este mismo enlace.</footer>
 </div>
 
+<!-- ========== MODAL DE LOGIN (AUTH) ========== -->
+<div class="modal-overlay hidden" id="auth-modal">
+  <div class="modal">
+    <h2>Inicia sesión</h2>
+    <p>Ingresa tu correo y te enviaremos un enlace mágico para entrar.</p>
+    <input type="email" id="auth-email" placeholder="tucorreo@universidad.edu">
+    <div class="modal-actions">
+      <button class="btn-primary" id="auth-send-link" disabled>Enviar enlace</button>
+    </div>
+    <p style="margin-top:12px; font-size:12px; text-align:center;" id="auth-message"></p>
+  </div>
+</div>
+  
 <!-- Modal de perfil -->
 <div class="modal-overlay hidden" id="profile-modal">
   <div class="modal">
@@ -309,6 +362,7 @@
   let isMetricsCollapsed = true;
   let currentProject = null;
   let realtimeChannel = null;
+  let authUser = null;   // guardará el usuario autenticado
 
   function colorForName(name){
     let hash = 0;
@@ -355,24 +409,45 @@
     return data;
   }
 
-  async function fetchProjects(){
-    const { data, error } = await sb
-      .from('projects')
-      .select('*')
-      .order('created_at', {ascending:true});
-    if(error){ console.error(error); return []; }
-    return data;
-  }
+async function fetchProjects(){
+  // Obtener usuario autenticado
+  const { data: userData } = await sb.auth.getUser();
+  if(!userData.user) return [];               // si no hay usuario, no mostrar proyectos
 
-  async function createProject(name){
-    const { data, error } = await sb
-      .from('projects')
-      .insert({ name, created_by: profile ? profile.name : null })
-      .select()
-      .single();
-    if(error){ console.error(error); return null; }
-    return data;
-  }
+  // Consultar la tabla de miembros uniendo con proyectos
+  const { data, error } = await sb
+    .from('project_members')
+    .select('projects(*)')                    // trae los datos del proyecto relacionado
+    .eq('user_id', userData.user.id);
+
+  if(error){ console.error(error); return []; }
+
+  // Extraer solo los proyectos
+  return data.map(m => m.projects);
+}
+
+async function createProject(name){
+  const { data: userData } = await sb.auth.getUser();
+  if(!userData.user) return null;
+
+  // 1. Insertar el proyecto
+  const { data, error } = await sb
+    .from('projects')
+    .insert({ name, created_by: userData.user.id })
+    .select()
+    .single();
+
+  if(error || !data) return null;
+
+  // 2. Insertar al usuario como miembro owner
+  await sb.from('project_members').insert({
+    project_id: data.id,
+    user_id: userData.user.id,
+    role: 'owner'
+  });
+
+  return data;
+}
 
   function getProjectIdFromUrl(){
     const params = new URLSearchParams(window.location.search);
@@ -457,23 +532,25 @@
     setTimeout(() => document.getElementById('new-project-name').focus(), 50);
   }
 
-  function renderProjectList(projects){
-    const listEl = document.getElementById('project-list');
+function renderProjectList(projects){
+  const listEl = document.getElementById('project-list');
+  listEl.innerHTML = '';                            // limpia el contenedor
 
-    if(!projects.length){
-      listEl.innerHTML = '<div class="empty-hint">No hay proyectos todavía. Crea el primero.</div>';
-      return;
-    }
-
-    listEl.innerHTML = '';
-    projects.forEach(p => {
-      const btn = document.createElement('button');
-      btn.className = 'project-item';
-      btn.textContent = p.name;
-      btn.addEventListener('click', () => selectProject(p));
-      listEl.appendChild(btn);
-    });
+  // Si no hay proyectos, muestra mensaje
+  if(!projects.length){
+    listEl.innerHTML = '<div class="empty-hint">No hay proyectos todavía. Crea el primero.</div>';
+    return;
   }
+
+  // Crea una tarjeta por cada proyecto
+  projects.forEach(p => {
+    const card = document.createElement('button');
+    card.className = 'project-item';                // aplica el estilo de grid
+    card.textContent = p.name;
+    card.addEventListener('click', () => selectProject(p)); // al hacer clic abre el proyecto
+    listEl.appendChild(card);
+  });
+}
 
   function closeProjectModal(){
     document.getElementById('project-modal').classList.add('hidden');
@@ -499,6 +576,32 @@
     setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
     subscribeRealtime(currentProject.id);
   }
+
+  // ========== AUTENTICACIÓN ==========
+
+function openAuthModal(){
+  document.getElementById('auth-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('auth-email').focus(), 50);
+}
+
+function closeAuthModal(){
+  document.getElementById('auth-modal').classList.add('hidden');
+}
+
+async function sendMagicLink(email){
+  const { error } = await sb.auth.signInWithOtp({
+    email: email,
+    options: {
+      emailRedirectTo: window.location.href   // vuelve a la misma página
+    }
+  });
+
+  if(error){
+    document.getElementById('auth-message').textContent = 'Error al enviar enlace: ' + error.message;
+  } else {
+    document.getElementById('auth-message').textContent = 'Revisa tu correo y haz clic en el enlace para entrar.';
+  }
+}
 
   function render(){
     const board = document.getElementById('board');
@@ -836,6 +939,38 @@
     const project = await createProject(name);
     if(project) selectProject(project);
   });
+  
+  // Listeners del modal de autenticación
+document.getElementById('auth-email').addEventListener('input', (e) => {
+  document.getElementById('auth-send-link').disabled = !e.target.value.trim();
+});
+
+document.getElementById('auth-email').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' && e.target.value.trim()){
+    document.getElementById('auth-send-link').click();
+  }
+});
+
+document.getElementById('auth-send-link').addEventListener('click', () => {
+  const email = document.getElementById('auth-email').value.trim();
+  if(email) sendMagicLink(email);
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+});
+  
+// Detectar cambios de sesión (login/logout)
+sb.auth.onAuthStateChange((event, session) => {
+  if(event === 'SIGNED_IN'){
+    authUser = session.user;
+    closeAuthModal();
+    boot();  // recargar la app con la sesión activa
+  } else if(event === 'SIGNED_OUT'){
+    authUser = null;
+    location.reload();
+  }
+});
 
   function subscribeRealtime(projectId){
     if(realtimeChannel){
@@ -860,22 +995,61 @@
       .subscribe();
   }
 
-  async function boot(){
-    profile = loadProfile();
+async function boot(){
+  // 1. Obtener sesión actual
+  const { data: sessionData } = await sb.auth.getSession();
+  authUser = sessionData?.session?.user || null;
 
-    const projectId = getProjectIdFromUrl();
+  // 2. Si no hay sesión, mostrar modal de login
+  if(!authUser){
+    document.getElementById('loading-screen').classList.add('hidden');
+    openAuthModal();
+    return;
+  }
 
-    if(projectId){
-      const { data, error } = await sb
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .maybeSingle();
+  // 3. Cargar perfil local
+  profile = loadProfile();
 
-      if(!error && data){
-        currentProject = data;
-      }
+  // 4. Obtener proyecto de la URL (si existe)
+  const projectId = getProjectIdFromUrl();
+  if(projectId){
+    const { data, error } = await sb
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .maybeSingle();
+
+    if(!error && data){
+      currentProject = data;
     }
+  }
+
+  document.getElementById('loading-screen').classList.add('hidden');
+
+  // 5. Si no hay proyecto en URL, mostrar selector
+  if(!currentProject){
+    document.getElementById('app').style.display = 'none';
+    openProjectModal();
+    return;
+  }
+
+  // 6. Cargar tareas del proyecto
+  tasks = await fetchTasks(currentProject.id);
+
+  // 7. Mostrar tablero
+  document.getElementById('app').style.display = 'block';
+  updateProjectHeader();
+
+  if(profile && profile.name){
+    applyProfilePill();
+  } else {
+    openProfileModal('');
+  }
+
+  render();
+  setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
+  subscribeRealtime(currentProject.id);
+}
 
     document.getElementById('loading-screen').classList.add('hidden');
 

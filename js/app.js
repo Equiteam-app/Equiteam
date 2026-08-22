@@ -35,6 +35,16 @@ let realtimeChannel = null;
 let pendingBoardName = null;
 
 // ==================== FUNCIÓN PRINCIPAL DE RENDER (TABLERO) ====================
+
+// Consulta la base de datos para obtener la lista de tareas actualizada y redibujar
+async function refreshTasksAndRender() {
+  if (currentProject) {
+    // Volvemos a traer las tareas de Supabase para limpiar eliminadas o reflejar cambios
+    tasks = await fetchTasks(currentProject.id);
+    render();
+  }
+}
+
 function render() {
   renderBoard(
     tasks,
@@ -44,7 +54,7 @@ function render() {
       isMetricsCollapsed = !isMetricsCollapsed;
       render();
     },
-    render,           // callback para refrescar (por ejemplo, al cancelar edición)
+    refreshTasksAndRender, // Pasamos la función de refresco que sincroniza antes de pintar
     currentProject.id
   );
 }

@@ -39,46 +39,34 @@ let pendingBoardName = null;
 // Consulta la base de datos para obtener la lista de tareas actualizada y redibujar
 async function refreshTasksAndRender() {
   if (currentProject) {
-    // Volvemos a traer las tareas de Supabase para limpiar eliminadas o reflejar cambios
     tasks = await fetchTasks(currentProject.id);
     render();
   }
 }
 
-function render() {
-  renderBoard(
-    tasks,
-    profile,
-    isMetricsCollapsed,
-    () => {
-      isMetricsCollapsed = !isMetricsCollapsed;
-      render();
-    },
-    refreshTasksAndRender, // Pasamos la función de refresco que sincroniza antes de pintar
-    currentProject.id
-  );
-}
-
-// ==================== SUSCRIPCIÓN REALTIME ====================
+// Suscripción a cambios en tiempo real
 function subscribeRealtime(projectId) {
   if (realtimeChannel) {
     sb.removeChannel(realtimeChannel);
     realtimeChannel = null;
   }
 
+  // Escuchamos todos los cambios de la tabla 'tasks' (incluyendo DELETE)
   realtimeChannel = sb.channel('tasks-changes-' + projectId)
     .on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
-        table: 'tasks',
-        filter: `project_id=eq.${projectId}`
+        table: 'tasks'
       },
       async () => {
-        tasks = await fetchTasks(currentProject.id);
-        render();
-        setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
+        // Solo recargamos si el usuario continúa en el mismo proyecto activo
+        if (currentProject && currentProject.id === projectId) {
+          tasks = await fetchTasks(currentProject.id);
+          render();
+          setSyncNote('Actualizado ' + timeAgo(new Date().toISOString()));
+        }
       }
     )
     .subscribe();

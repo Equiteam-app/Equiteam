@@ -225,17 +225,21 @@ export function renderBoard(tasks, profile, isMetricsCollapsed, onMetricsToggle,
     colEl.dataset.columnId = col.id;
 
     // Eventos de arrastrar y soltar
-    colEl.addEventListener('dragover', (e) => { e.preventDefault(); colEl.classList.add('drag-over'); });
+    colEl.addEventListener('dragover', (e) => { 
+      e.preventDefault(); 
+      colEl.classList.add('drag-over'); 
+    });
+
     colEl.addEventListener('dragleave', () => colEl.classList.remove('drag-over'));
-colEl.addEventListener('drop', (e) => {
-  e.preventDefault();
-  colEl.classList.remove('drag-over');
-  // Usamos la variable en memoria en lugar de consultar localStorage
-  if (currentDraggingTaskId) {
-    moveTask(currentDraggingTaskId, col.id, profile.name, projectId);
-    currentDraggingTaskId = null;
-  }
-});
+
+    colEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      colEl.classList.remove('drag-over');
+      // Usamos la variable en memoria en lugar de consultar localStorage
+      if (currentDraggingTaskId) {
+        moveTask(currentDraggingTaskId, col.id, profile.name, projectId);
+        currentDraggingTaskId = null;
+      }
     });
 
     // Encabezado de columna

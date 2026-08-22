@@ -33,7 +33,8 @@ export function setSyncNote(text) {
 export function applyProfilePill(profile, authUser) {
   document.getElementById('profile-name').textContent = profile.name;
   document.getElementById('profile-avatar').textContent = initials(profile.name);
-  document.getElementById('profile-avatar').style.background = colorForName(profile.name);
+  // Aplicamos el color guardado (si existe) o generamos uno basado en el nombre
+  document.getElementById('profile-avatar').style.background = profile.color || colorForName(profile.name);
 }
 
 // ==================== HOME: GRID DE TABLEROS ====================
@@ -84,10 +85,11 @@ export function renderHomeGrid(boards, onSelect, onDelete) {
   });
 }
 
-export function updateHomeProfilePill(label) {
+export function updateHomeProfilePill(label, color) {
   document.getElementById('home-profile-name').textContent = label;
   document.getElementById('home-profile-avatar').textContent = initials(label);
-  document.getElementById('home-profile-avatar').style.background = colorForName(label);
+  // Aplicamos el color guardado (si existe)
+  document.getElementById('home-profile-avatar').style.background = color || colorForName(label);
 }
 
 export function setHomeAuthButton(text, onClick) {
@@ -114,16 +116,17 @@ export function openProfileModal(profile, authUser) {
   const guestMessage = document.getElementById('guest-message');
   const signupBtn = document.getElementById('profile-signup-btn');
   const colorOptions = document.getElementById('profile-color-options');
+  
+  const accountInfo = document.getElementById('account-info');
+  const emailDisplay = document.getElementById('profile-email-display');
 
   // Limpiar opciones de color
   colorOptions.innerHTML = '';
 
-  // Determinar color seleccionado actual
   const selectedColor = profile?.color || 
     (profile?.name ? colorForName(profile.name) : 
     (authUser?.email ? colorForName(authUser.email) : '#d9a441'));
 
-  // Generar círculos de color usando TAPE_PALETTE
   TAPE_PALETTE.forEach(color => {
     const circle = document.createElement('div');
     circle.className = 'color-circle' + (color === selectedColor ? ' selected' : '');
@@ -137,21 +140,22 @@ export function openProfileModal(profile, authUser) {
     colorOptions.appendChild(circle);
   });
 
-  // Guardar color seleccionado en el modal
   overlay.dataset.selectedColor = selectedColor;
 
-  // Mostrar mensaje de invitado si no hay usuario autenticado
+  // Lógica para mostrar la sesión o el mensaje de invitado
   if (!authUser) {
     guestMessage.style.display = 'block';
+    if(accountInfo) accountInfo.style.display = 'none';
     signupBtn.onclick = () => {
       closeProfileModal();
-      openAuthModal();
+      openSignupModal(); // Ahora lleva directamente al formulario de CREAR CUENTA
     };
   } else {
     guestMessage.style.display = 'none';
+    if(accountInfo) accountInfo.style.display = 'block';
+    if(emailDisplay) emailDisplay.textContent = authUser.email; // Mostramos el correo actual
   }
 
-  // Rellenar campo de nombre
   input.value = profile?.name || '';
   saveBtn.disabled = !input.value.trim();
 

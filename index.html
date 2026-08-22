@@ -171,6 +171,22 @@
     </div>
   </div>
 
+  <!-- Modal para crear un tablero nuevo -->
+  <div class="modal-overlay hidden" id="project-modal">
+    <div class="modal">
+      <h2>Nuevo tablero</h2>
+      <p>Ponle un nombre a tu tablero de equipo.</p>
+  
+      <label class="input-label" for="new-project-name">Nombre del tablero</label>
+      <input type="text" id="new-project-name" maxlength="40" placeholder="Ej. Proyecto final">
+  
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="edit-cancel" id="create-project-cancel" style="flex:1; padding:11px; border-radius:9px;">Cancelar</button>
+        <button class="btn-primary" id="create-project-btn" disabled>Crear tablero</button>
+      </div>
+    </div>
+  </div>
+  
   <!-- Modal de nueva tarea -->
   <div class="modal-overlay hidden" id="add-task-modal">
     <div class="modal">

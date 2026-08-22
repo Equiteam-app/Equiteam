@@ -68,7 +68,6 @@
             <span class="hint">Tocar para cambiar</span>
           </div>
         </div>
-        <button id="logout-btn" class="logout-btn">Cerrar sesión</button>
         <div class="sync-note" id="sync-note">Sincronizando…</div>
       </div>
     </header>
@@ -79,31 +78,22 @@
 <!-- Modal de perfil -->
 <div class="modal-overlay hidden" id="profile-modal">
   <div class="modal" style="position: relative;">
-    <!-- Botón de cerrar (X) en la esquina superior -->
     <button class="modal-close" id="profile-close">&times;</button>
-    
-    <h2>Tu perfil</h2>
-    
-    <!-- Info de cuenta (solo visible si hay sesión) -->
-    <div id="account-info" style="display:none; margin-bottom: 16px; font-size: 13.5px; color: var(--ink-soft); background: rgba(0,0,0,.04); padding: 10px; border-radius: 8px;">
-      Sesión iniciada como: <strong id="profile-email-display" style="color:var(--ink); display:block; margin-top:2px;"></strong>
-      <button id="profile-logout-btn" style="display:inline-block; margin-top:8px; background:none; border:none; color:var(--danger); text-decoration:underline; cursor:pointer; font-family:inherit; padding:0; font-size:12.5px;">Cerrar sesión</button>
-    </div>
 
+    <h2>Tu perfil</h2>
     <p>Personaliza cómo te ven tus compañeros.</p>
 
-    <!-- Campo de nombre -->
-    <label class="input-label" for="profile-input">Nombre</label>
+    <!-- 1. ACCIÓN PRINCIPAL: identidad visual -->
+    <label class="input-label" for="profile-input" style="margin-top:0;">Nombre</label>
     <input type="text" id="profile-input" maxlength="30" placeholder="Tu nombre">
 
-    <!-- Selector de color de avatar -->
-    <label class="input-label" style="margin-top:12px;">Color del avatar</label>
+    <label class="input-label" style="margin-top:14px;">Color del avatar</label>
     <div class="color-options" id="profile-color-options">
       <!-- Los colores se generan dinámicamente con JS -->
     </div>
 
-    <!-- Mensaje para invitados -->
-    <div id="guest-message" style="display:none; margin-top:12px; padding:10px; background:rgba(255,255,255,.05); border-radius:8px;">
+    <!-- Mensaje para invitados (relacionado con la acción principal, va antes de Guardar) -->
+    <div id="guest-message" style="display:none; margin-top:14px; padding:10px; background:rgba(255,255,255,.05); border-radius:8px;">
       <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 8px;">
         Estás como invitado. Crea una cuenta para guardar tus tableros y sincronizarlos.
       </p>
@@ -112,6 +102,15 @@
 
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn-primary" id="profile-save" disabled>Guardar</button>
+    </div>
+
+    <!-- 2 y 3. INFO SECUNDARIA + ACCIÓN DE CIERRE: separadas visualmente -->
+    <div id="account-info" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid var(--card-line);">
+      <span class="input-label" style="margin-top:0;">Cuenta</span>
+      <div style="font-size:13.5px; color:var(--ink-soft);">
+        Sesión iniciada como <strong id="profile-email-display" style="color:var(--ink);"></strong>
+      </div>
+      <button id="profile-logout-btn" style="display:block; margin-top:10px; background:none; border:none; color:var(--danger); text-decoration:underline; cursor:pointer; font-family:inherit; padding:0; font-size:12.5px;">Cerrar sesión</button>
     </div>
   </div>
 </div>

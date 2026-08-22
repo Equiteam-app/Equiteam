@@ -502,6 +502,15 @@ document.getElementById('back-to-home-btn').addEventListener('click', () => {
   renderHome();
 });
 
+// Logo: siempre regresa al Hub de Proyectos (mismo comportamiento que "← Tableros")
+document.querySelectorAll('.brand-logo').forEach(logo => {
+  logo.addEventListener('click', () => {
+    unsubscribeRealtime();
+    clearProjectUrl();
+    renderHome();
+  });
+});
+
 // Compartir usando el ID seguro y nativo de Clipboard API
 document.getElementById('share-btn').addEventListener('click', async () => {
   if (!currentProject) return;

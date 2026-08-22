@@ -209,22 +209,25 @@ export function setAuthMessage(msg) {
   document.getElementById('auth-message').textContent = msg;
 }
 
-// Variable en memoria a nivel de módulo para rastrear el ID de la tarjeta arrastrada
+// Variable en memoria para registrar la tarjeta en movimiento
 let currentDraggingTaskId = null;
 
 // ==================== TABLERO ====================
 export function renderBoard(tasks, profile, isMetricsCollapsed, onMetricsToggle, refresh, projectId) {
   const board = document.getElementById('board');
-  board.innerHTML = '';
+  board.innerHTML = ''; // Limpiamos el contenedor principal antes de redibujar
 
-  // Renderiza las tres columnas de tareas
+  // Recorremos las columnas definidas (Por hacer, En progreso, Hecho)
   COLUMN_DEFS.forEach(col => {
+    // Filtramos las tareas que pertenecen a la columna actual
     const colTasks = tasks.filter(t => t.column_id === col.id);
+    
+    // Creamos el elemento visual de la columna
     const colEl = document.createElement('div');
     colEl.className = 'column';
     colEl.dataset.columnId = col.id;
 
-    // Eventos de arrastrar y soltar
+    // Gestor visual al arrastrar elementos sobre la columna
     colEl.addEventListener('dragover', (e) => { 
       e.preventDefault(); 
       colEl.classList.add('drag-over'); 
@@ -232,17 +235,19 @@ export function renderBoard(tasks, profile, isMetricsCollapsed, onMetricsToggle,
 
     colEl.addEventListener('dragleave', () => colEl.classList.remove('drag-over'));
 
+    // Asignación de la tarjeta al soltarla en la columna destino
     colEl.addEventListener('drop', (e) => {
       e.preventDefault();
       colEl.classList.remove('drag-over');
-      // Usamos la variable en memoria en lugar de consultar localStorage
+      
+      // Si hay una tarjeta activa en transferencia, la movemos en la base de datos
       if (currentDraggingTaskId) {
         moveTask(currentDraggingTaskId, col.id, profile.name, projectId);
-        currentDraggingTaskId = null;
+        currentDraggingTaskId = null; // Reiniciamos el estado del arrastre
       }
     });
 
-    // Encabezado de columna
+    // Construcción del encabezado con título y contador de tarjetas
     const head = document.createElement('div');
     head.className = 'column-head';
     head.innerHTML = `
@@ -252,7 +257,7 @@ export function renderBoard(tasks, profile, isMetricsCollapsed, onMetricsToggle,
     `;
     colEl.appendChild(head);
 
-    // Contenedor de tarjetas
+    // Lista contenedora de tarjetas
     const cardsEl = document.createElement('div');
     cardsEl.className = 'cards';
     if (colTasks.length === 0) {
@@ -262,7 +267,7 @@ export function renderBoard(tasks, profile, isMetricsCollapsed, onMetricsToggle,
     }
     colEl.appendChild(cardsEl);
 
-    // Botón para añadir tarea solo en la columna "Por hacer"
+    // Formulario/Botón de creación únicamente en la primera columna ("Por hacer")
     if (col.id === 'todo') {
       const addRow = document.createElement('div');
       addRow.className = 'add-row';
@@ -274,10 +279,11 @@ export function renderBoard(tasks, profile, isMetricsCollapsed, onMetricsToggle,
       colEl.appendChild(addRow);
     }
 
+    // Insertamos la columna en el tablero
     board.appendChild(colEl);
   });
 
-  // Añade el panel de métricas
+  // Renderizamos la cuarta columna con las métricas de participación
   board.appendChild(createMetricsPanel(tasks, isMetricsCollapsed, onMetricsToggle));
 }
 

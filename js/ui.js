@@ -235,15 +235,16 @@ export function renderBoard(tasks, profile, isMetricsCollapsed, onMetricsToggle,
 
     colEl.addEventListener('dragleave', () => colEl.classList.remove('drag-over'));
 
-    // Asignación de la tarjeta al soltarla en la columna destino
-    colEl.addEventListener('drop', (e) => {
+colEl.addEventListener('drop', async (e) => {
       e.preventDefault();
       colEl.classList.remove('drag-over');
       
-      // Si hay una tarjeta activa en transferencia, la movemos en la base de datos
       if (currentDraggingTaskId) {
-        moveTask(currentDraggingTaskId, col.id, profile.name, projectId);
-        currentDraggingTaskId = null; // Reiniciamos el estado del arrastre
+        const taskId = currentDraggingTaskId;
+        currentDraggingTaskId = null;
+        // Guardamos en Supabase y refrescamos la pantalla inmediatamente
+        await moveTask(taskId, col.id, profile.name, projectId);
+        if (refresh) refresh();
       }
     });
 
@@ -377,24 +378,29 @@ tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.
     menu.classList.toggle('open');
   });
 
+// Mover desde el menú de opciones «⋯»
   menu.querySelectorAll('[data-move]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      moveTask(task.id, btn.dataset.move, profile.name, projectId);
       menu.classList.remove('open');
+      await moveTask(task.id, btn.dataset.move, profile.name, projectId);
+      if (refresh) refresh();
     });
   });
 
+  //editar desde el menu de opciones
   menu.querySelector('[data-edit]').addEventListener('click', (e) => {
     e.stopPropagation();
     menu.classList.remove('open');
     startEdit(card, task, profile, refresh, projectId);
   });
 
-  menu.querySelector('[data-delete]').addEventListener('click', (e) => {
+// Eliminar desde el menú de opciones «⋯»
+  menu.querySelector('[data-delete]').addEventListener('click', async (e) => {
     e.stopPropagation();
-    deleteTask(task.id, projectId);
     menu.classList.remove('open');
+    await deleteTask(task.id, projectId);
+    if (refresh) refresh();
   });
 
   return card;
@@ -429,11 +435,11 @@ function startEdit(card, task, profile, refresh, projectId) {
     refresh(); // simplemente re-renderiza desde el estado actual
   });
 
-  wrapper.querySelector('.edit-save').addEventListener('click', () => {
+  wrapper.querySelector('.edit-save').addEventListener('click', async () => {
     const newText = textarea.value.trim();
     if (!newText) return;
-    updateTaskData(task.id, newText, dateInput.value, projectId);
-    // No re-renderizamos aquí; el realtime se encargará
+    await updateTaskData(task.id, newText, dateInput.value, projectId);
+    if (refresh) refresh();
   });
 
   textarea.addEventListener('keydown', (e) => {

@@ -296,30 +296,26 @@ function renderCard(task, profile, refresh, projectId) {
   card.draggable = true;
   card.dataset.id = task.id;
 
-  // Evento de arrastre
-card.addEventListener('dragstart', () => {
-  // Guardamos el ID directamente en la variable local
-  currentDraggingTaskId = task.id;
-  card.classList.add('dragging');
-});
-
-card.addEventListener('dragend', () => {
-  card.classList.remove('dragging');
-  currentDraggingTaskId = null;
-});
+  // Evento de arrastre usando la variable en memoria
+  card.addEventListener('dragstart', () => {
+    currentDraggingTaskId = task.id;
+    card.classList.add('dragging');
+  });
+  card.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    currentDraggingTaskId = null;
+  });
 
   // Cinta superior (nombre del autor o "Hecho")
   let tapeHtml = '';
   if (isDone) {
     tapeHtml = '<div class="tape" style="background:#369C35; color:#ffffff;">Hecho</div>';
   } else if (task.author) {
-    
-// Asigna el color del avatar: solo usa el color personalizado si la tarea pertenece al usuario actual
-const tapeColor = task.author
-  ? (task.author === profile?.name && profile?.color ? profile.color : colorForName(task.author))
-  : 'rgba(255,255,255,.28)';
-    
-tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.author)}</div>`;
+    // Si la tarea es del usuario actual usamos su color guardado; de lo contrario generamos uno
+    const tapeColor = (task.author === profile?.name && profile?.color) 
+      ? profile.color 
+      : colorForName(task.author);
+    tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.author)}</div>`;
   } else {
     tapeHtml = '<div class="tape" style="background:rgba(255,255,255,.28)"></div>';
   }
@@ -365,10 +361,10 @@ tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.
     </div>
   `;
 
-  // Asignar texto
+  // Asignar texto de forma segura
   card.querySelector('.card-text').textContent = task.text;
 
-  // Eventos del menú
+  // Seleccionamos los botones del menú
   const menuBtn = card.querySelector('.menu-btn');
   const menu = card.querySelector('.menu');
 
@@ -378,7 +374,7 @@ tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.
     menu.classList.toggle('open');
   });
 
-// Mover desde el menú de opciones «⋯»
+  // Mover tarjeta desde el menú
   menu.querySelectorAll('[data-move]').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -388,22 +384,29 @@ tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.
     });
   });
 
-  //editar desde el menu de opciones
+  // Editar tarjeta desde el menú
   menu.querySelector('[data-edit]').addEventListener('click', (e) => {
     e.stopPropagation();
     menu.classList.remove('open');
     startEdit(card, task, profile, refresh, projectId);
   });
 
-// Eliminar desde el menú de opciones «⋯»
+  // Eliminar tarjeta desde el menú
   menu.querySelector('[data-delete]').addEventListener('click', async (e) => {
     e.stopPropagation();
     menu.classList.remove('open');
-    await deleteTask(task.id, projectId);
+    
+    // Esperamos a que la base de datos confirme la eliminación
+    const error = await deleteTask(task.id, projectId);
+    if (error) {
+      showToast('No se pudo eliminar la tarjeta');
+    }
+    
+    // Forzamos la actualización inmediata del estado visual
     if (refresh) refresh();
   });
 
-  return card;
+  return card; // ¡CRUCIAL! Si esto falta, el DOM se rompe y el tablero queda en blanco.
 }
 
 // ==================== EDICIÓN EN LÍNEA ====================

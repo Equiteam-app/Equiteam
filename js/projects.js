@@ -87,3 +87,12 @@ export function getInviteLink(projectId) {
   url.searchParams.set('project', projectId);
   return url.toString();
 }
+
+// Elimina un proyecto (solo el owner puede, verificado por RLS)
+export async function deleteProject(projectId) {
+  const { error } = await sb
+    .from('projects')
+    .delete()
+    .eq('id', projectId);
+  return error;
+}

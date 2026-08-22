@@ -110,23 +110,16 @@ function mergeBoards(serverBoards, localBoards) {
   return Array.from(map.values());
 }
 
-// Configura la píldora de perfil y el botón de sesión en la pantalla de inicio
+// Configura la píldora de perfil y oculta botones redundantes en la pantalla de inicio
 function updateHomeProfileUI(user) {
-  if (user) {
-    updateHomeProfilePill(user.email);
-    setHomeAuthButton('Cerrar sesión', async () => {
-      await signOut();
-      clearProjectUrl();
-      await renderHome();
-    });
-  } else {
-    const label = profile && profile.name ? profile.name : 'Invitado';
-    updateHomeProfilePill(label);
-    setHomeAuthButton('Iniciar sesión', () => {
-      setAuthMessage('');
-      openAuthModal();
-    });
-  }
+  // Priorizamos mostrar el nombre del perfil; si no hay, usamos la primera parte del correo, o 'Invitado'
+  const label = profile && profile.name ? profile.name : (user ? user.email.split('@')[0] : 'Invitado');
+  updateHomeProfilePill(label, profile?.color);
+  
+  // Ocultamos el botón externo de iniciar sesión, ya que ahora el usuario 
+  // accede al registro desde su píldora de perfil.
+  const homeAuthBtn = document.getElementById('home-auth-btn');
+  if (homeAuthBtn) homeAuthBtn.style.display = 'none';
 }
 
 // Prepara y dibuja la pantalla principal con la lista de proyectos
@@ -174,10 +167,6 @@ async function enterBoard(project) {
 
   showBoardScreen();
   updateProjectHeader(project);
-
-  // Botón de cerrar sesión visible solo si hay cuenta autenticada
-  const logoutBtn = document.getElementById('logout-btn');
-  logoutBtn.style.display = getCurrentUser() ? 'inline-block' : 'none';
 
   // Evalúa si es necesario pedirle el nombre al usuario
   profile = loadProfile();
@@ -262,45 +251,66 @@ async function boot() {
 
 // ==================== EVENTOS GLOBALES Y MODALES ====================
 
-// Cierra cualquier menú desplegable al hacer clic fuera de él
+// Cierra cualquier menú contextual (los de los 3 puntitos) al hacer clic en cualquier parte de la pantalla
 document.addEventListener('click', () => {
   document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
 });
 
+// ----- Cierre universal de modales -----
+// Permite al usuario salir de cualquier modal haciendo clic en el fondo oscuro
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    // Verifica que el clic sea exactamente en el fondo oscuro y no dentro de la caja blanca
+    if (e.target === overlay) {
+      overlay.classList.add('hidden');
+    }
+  });
+});
+
+// Cierra los modales usando los respectivos botones de equis (X) superior
 document.getElementById('auth-close').addEventListener('click', closeAuthModal);
 document.getElementById('signup-close').addEventListener('click', closeSignupModal);
+document.getElementById('profile-close').addEventListener('click', closeProfileModal);
 
-// ----- Gestión del Perfil (Modales) -----
+// ----- Gestión del Perfil (Apertura) -----
+// Abre el menú de perfil estando dentro de un tablero de trabajo
 document.getElementById('profile-pill').addEventListener('click', () => {
   openProfileModal(profile, getCurrentUser());
 });
 
+// Abre el menú de perfil desde la pantalla de inicio ("Mis tableros")
 document.getElementById('home-profile-pill').addEventListener('click', () => {
   openProfileModal(profile, getCurrentUser());
 });
 
+// ----- Gestión del Perfil (Validación y Guardado) -----
+// Deshabilita el botón de guardar si el usuario borra su nombre (evita perfiles vacíos)
 document.getElementById('profile-input').addEventListener('input', (e) => {
   document.getElementById('profile-save').disabled = !e.target.value.trim();
 });
 
+// Atajo de teclado: permite guardar el perfil presionando la tecla "Enter"
 document.getElementById('profile-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.value.trim()) {
     document.getElementById('profile-save').click();
   }
 });
 
-// Guardado del perfil en LocalStorage y actualización visual
+// Recupera los datos ingresados, los guarda localmente y actualiza la vista visual
 document.getElementById('profile-save').addEventListener('click', () => {
   const name = document.getElementById('profile-input').value.trim();
   if (!name) return;
 
+  // Recupera el color seleccionado desde los datos temporales del modal
   const overlay = document.getElementById('profile-modal');
   const selectedColor = overlay.dataset.selectedColor || '#d9a441';
 
+  // Actualiza la variable en memoria y persiste la información
   profile = { name, color: selectedColor };
   saveProfile(profile);
   closeProfileModal();
 
+  // Redibuja la interfaz correcta dependiendo de si estamos en un proyecto o en el home
   if (currentProject) {
     applyProfilePill(profile, getCurrentUser());
     render();
@@ -308,6 +318,17 @@ document.getElementById('profile-save').addEventListener('click', () => {
     renderHome();
   }
 });
+
+// ----- Cierre de sesión (Centralizado) -----
+// Desconecta la cuenta en Supabase, limpia la URL y recarga la página para estado en cero
+const profileLogoutBtn = document.getElementById('profile-logout-btn');
+if (profileLogoutBtn) {
+  profileLogoutBtn.addEventListener('click', async () => {
+    await signOut();
+    clearProjectUrl(); // Evita que al recargar intentemos volver a entrar al tablero automáticamente
+    location.reload(); // Recarga toda la aplicación web
+  });
+}
 
 // ==================== AUTENTICACIÓN (DOM EVENTS) ====================
 
@@ -411,13 +432,6 @@ signupConfirmPassword.addEventListener('keydown', (e) => {
     e.preventDefault();
     if (!signupBtn.disabled) signupBtn.click();
   }
-});
-
-// Limpieza de estado al cerrar sesión
-document.getElementById('logout-btn').addEventListener('click', async () => {
-  await signOut();
-  clearProjectUrl();
-  location.reload();
 });
 
 // ==================== OPERACIONES DE TABLEROS ====================

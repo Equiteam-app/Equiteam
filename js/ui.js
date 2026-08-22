@@ -95,7 +95,6 @@ export function renderHomeGrid(boards, onSelect, onDelete) {
     card.addEventListener('click', () => onSelect(b));
     grid.appendChild(card);
   });
-}
 
 export function updateHomeProfilePill(label) {
   document.getElementById('home-profile-name').textContent = label;

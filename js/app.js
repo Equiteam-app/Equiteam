@@ -6,13 +6,13 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { sb } from './supabase.js';
 import {
   loadProfile, saveProfile, timeAgo, colorForName, initials,
-  getJoinedBoards, addJoinedBoard
+  getJoinedBoards, addJoinedBoard, removeJoinedBoard
 } from './utils.js';
 import {
   getSession, onAuthChange, signInWithPassword, signUpWithPassword, signOut, getCurrentUser
 } from './auth.js';
 import {
-  fetchProjects, createProject, getProjectById,
+  fetchProjects, createProject, deleteProject, getProjectById,
   getProjectIdFromUrl, setProjectUrl, clearProjectUrl, getInviteLink
 } from './projects.js';
 import { fetchTasks, addTask } from './tasks.js';
@@ -125,7 +125,22 @@ async function renderHome() {
   const localBoards = getJoinedBoards();
   const boards = mergeBoards(serverBoards, localBoards);
 
-  renderHomeGrid(boards, (b) => openBoard(b.id));
+  // Boton de eliminar tablero
+  renderHomeGrid(boards, (b) => openBoard(b.id), async (b) => {
+  if (!confirm(`¿Eliminar tablero "${b.name}"? Esta acción no se puede deshacer.`)) return;
+  
+  if (b.role === 'owner') {
+    const error = await deleteProject(b.id);
+    if (error) {
+      showToast('No se pudo eliminar el tablero.');
+      return;
+    }
+  }
+  
+  removeJoinedBoard(b.id);
+  await renderHome();
+  showToast('Tablero eliminado');
+});
 }
 
 // ==================== ENTRAR / ABRIR UN TABLERO ====================
@@ -453,12 +468,16 @@ document.getElementById('share-btn').addEventListener('click', async () => {
 // ==================== NUEVA TAREA ====================
 document.getElementById('add-task-cancel').addEventListener('click', closeAddTaskModal);
 
+//Refresca las tareas en vivo
 document.getElementById('add-task-save').addEventListener('click', async () => {
   const text = document.getElementById('new-task-text').value.trim();
   if (!text) return;
   const dueDate = document.getElementById('new-task-date').value;
   await addTask(currentProject.id, 'todo', text, dueDate);
   closeAddTaskModal();
+  // Forzar refresh inmediato (fallback si Realtime tiene delay)
+  tasks = await fetchTasks(currentProject.id);
+  render();
 });
 
 document.getElementById('new-task-text').addEventListener('keydown', (e) => {

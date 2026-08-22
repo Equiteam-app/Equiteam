@@ -37,8 +37,8 @@ export function applyProfilePill(profile, authUser) {
 }
 
 // ==================== HOME: GRID DE TABLEROS ====================
-// boards: [{ id, name, role: 'owner' | 'invitado' }]
-export function renderHomeGrid(boards, onSelect) {
+// Renderiza la lista de tableros agregando el botón de eliminación individual
+export function renderHomeGrid(boards, onSelect, onDelete) {
   const grid = document.getElementById('home-grid');
   grid.innerHTML = '';
 
@@ -50,6 +50,39 @@ export function renderHomeGrid(boards, onSelect) {
       </div>`;
     return;
   }
+
+  boards.forEach(b => {
+    const card = document.createElement('div');
+    card.className = 'board-card';
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <span class="board-card-dot" style="background:${colorForName(b.name)}"></span>
+        <!-- Botón para eliminar el tablero -->
+        <button class="menu-btn delete-board-btn" title="Eliminar tablero" style="color:var(--danger); font-size:14px; padding:2px 6px;">✕</button>
+      </div>
+      <span class="board-card-name">${escapeHtml(b.name)}</span>
+      <span class="board-card-tag">${b.role === 'owner' ? 'Administrador' : 'Invitado'}</span>
+    `;
+
+    // Abrir tablero al hacer clic en la tarjeta (si no se presionó el botón de borrar)
+    card.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('delete-board-btn')) {
+        onSelect(b);
+      }
+    });
+
+    // Evento para la acción de eliminar
+    const deleteBtn = card.querySelector('.delete-board-btn');
+    if (deleteBtn && onDelete) {
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onDelete(b);
+      });
+    }
+
+    grid.appendChild(card);
+  });
+}
 
   boards.forEach(b => {
     const card = document.createElement('button');
@@ -189,6 +222,9 @@ export function setAuthMessage(msg) {
   document.getElementById('auth-message').textContent = msg;
 }
 
+// Variable en memoria a nivel de módulo para rastrear el ID de la tarjeta arrastrada
+let currentDraggingTaskId = null;
+
 // ==================== TABLERO ====================
 export function renderBoard(tasks, profile, isMetricsCollapsed, onMetricsToggle, refresh, projectId) {
   const board = document.getElementById('board');
@@ -204,14 +240,15 @@ export function renderBoard(tasks, profile, isMetricsCollapsed, onMetricsToggle,
     // Eventos de arrastrar y soltar
     colEl.addEventListener('dragover', (e) => { e.preventDefault(); colEl.classList.add('drag-over'); });
     colEl.addEventListener('dragleave', () => colEl.classList.remove('drag-over'));
-    colEl.addEventListener('drop', (e) => {
-      e.preventDefault();
-      colEl.classList.remove('drag-over');
-      const draggingId = localStorage.getItem('draggingId'); // guardamos el id globalmente
-      if (draggingId) {
-        moveTask(draggingId, col.id, profile.name, projectId);
-        localStorage.removeItem('draggingId');
-      }
+colEl.addEventListener('drop', (e) => {
+  e.preventDefault();
+  colEl.classList.remove('drag-over');
+  // Usamos la variable en memoria en lugar de consultar localStorage
+  if (currentDraggingTaskId) {
+    moveTask(currentDraggingTaskId, col.id, profile.name, projectId);
+    currentDraggingTaskId = null;
+  }
+});
     });
 
     // Encabezado de columna
@@ -262,24 +299,29 @@ function renderCard(task, profile, refresh, projectId) {
   card.dataset.id = task.id;
 
   // Evento de arrastre
-  card.addEventListener('dragstart', () => {
-    localStorage.setItem('draggingId', task.id); // guardamos el id en localStorage
-    card.classList.add('dragging');
-  });
-  card.addEventListener('dragend', () => {
-    card.classList.remove('dragging');
-    localStorage.removeItem('draggingId');
-  });
+card.addEventListener('dragstart', () => {
+  // Guardamos el ID directamente en la variable local
+  currentDraggingTaskId = task.id;
+  card.classList.add('dragging');
+});
+
+card.addEventListener('dragend', () => {
+  card.classList.remove('dragging');
+  currentDraggingTaskId = null;
+});
 
   // Cinta superior (nombre del autor o "Hecho")
   let tapeHtml = '';
   if (isDone) {
     tapeHtml = '<div class="tape" style="background:#369C35; color:#ffffff;">Hecho</div>';
   } else if (task.author) {
-  const tapeColor = task.author
-    ? (profile?.color || colorForName(task.author))
-    : 'rgba(255,255,255,.28)';
-    tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.author)}</div>`;
+    
+// Asigna el color del avatar: solo usa el color personalizado si la tarea pertenece al usuario actual
+const tapeColor = task.author
+  ? (task.author === profile?.name && profile?.color ? profile.color : colorForName(task.author))
+  : 'rgba(255,255,255,.28)';
+    
+tapeHtml = `<div class="tape" style="background:${tapeColor}">${escapeHtml(task.author)}</div>`;
   } else {
     tapeHtml = '<div class="tape" style="background:rgba(255,255,255,.28)"></div>';
   }

@@ -343,96 +343,112 @@ const signupConfirmPassword = document.getElementById('signup-confirm-password')
 const signupBtn = document.getElementById('signup-btn');
 const signupMessage = document.getElementById('signup-message');
 
-// Valida campos vacíos para el login
+// Valida campos vacíos para el login de forma segura
 function updateLoginButton() {
+  if (!authEmail || !authPassword || !authLoginBtn) return;
   const emailOk = authEmail.value.trim().length > 0;
   const passwordOk = authPassword.value.length >= 6;
   authLoginBtn.disabled = !(emailOk && passwordOk);
 }
 
-authEmail.addEventListener('input', updateLoginButton);
-authPassword.addEventListener('input', updateLoginButton);
+if (authEmail) authEmail.addEventListener('input', updateLoginButton);
+if (authPassword) {
+  authPassword.addEventListener('input', updateLoginButton);
+  authPassword.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (authLoginBtn && !authLoginBtn.disabled) authLoginBtn.click();
+    }
+  });
+}
 
-// Valida campos vacíos para el registro
+// Valida campos vacíos para el registro de forma segura
 function updateSignupButton() {
+  if (!signupEmail || !signupPassword || !signupConfirmPassword || !signupBtn) return;
   const emailOk = signupEmail.value.trim().length > 0;
   const passwordOk = signupPassword.value.length >= 6;
   const confirmOk = signupConfirmPassword.value.length > 0;
   signupBtn.disabled = !(emailOk && passwordOk && confirmOk);
 }
 
-signupEmail.addEventListener('input', updateSignupButton);
-signupPassword.addEventListener('input', updateSignupButton);
-signupConfirmPassword.addEventListener('input', updateSignupButton);
+if (signupEmail) signupEmail.addEventListener('input', updateSignupButton);
+if (signupPassword) signupPassword.addEventListener('input', updateSignupButton);
+if (signupConfirmPassword) {
+  signupConfirmPassword.addEventListener('input', updateSignupButton);
+  signupConfirmPassword.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (signupBtn && !signupBtn.disabled) signupBtn.click();
+    }
+  });
+}
 
 // Transiciones de vistas (Login <-> Sign Up)
-document.getElementById('show-signup-link').addEventListener('click', (e) => {
-  e.preventDefault();
-  closeAuthModal();
-  openSignupModal();
-});
+const showSignupLink = document.getElementById('show-signup-link');
+if (showSignupLink) {
+  showSignupLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeAuthModal();
+    openSignupModal();
+  });
+}
 
-document.getElementById('show-login-link').addEventListener('click', (e) => {
-  e.preventDefault();
-  closeSignupModal();
-  openAuthModal();
-});
+const showLoginLink = document.getElementById('show-login-link');
+if (showLoginLink) {
+  showLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeSignupModal();
+    openAuthModal();
+  });
+}
 
 // Solicitud de Login a Supabase
-authLoginBtn.addEventListener('click', async () => {
-  const email = authEmail.value.trim();
-  const password = authPassword.value;
-  if (!email || !password) return;
+if (authLoginBtn) {
+  authLoginBtn.addEventListener('click', async () => {
+    const email = authEmail ? authEmail.value.trim() : '';
+    const password = authPassword ? authPassword.value : '';
+    if (!email || !password) return;
 
-  authMessage.textContent = 'Iniciando sesión…';
-  const error = await signInWithPassword(email, password);
+    if (authMessage) authMessage.textContent = 'Iniciando sesión…';
+    const error = await signInWithPassword(email, password);
 
-  if (error) {
-    authMessage.textContent = 'Error: ' + error.message;
-  } else {
-    authMessage.textContent = '';
-    await afterAuthSuccess();
-  }
-});
+    if (error) {
+      if (authMessage) authMessage.textContent = 'Error: ' + error.message;
+    } else {
+      if (authMessage) authMessage.textContent = '';
+      await afterAuthSuccess();
+    }
+  });
+}
 
 // Solicitud de Registro a Supabase
-signupBtn.addEventListener('click', async () => {
-  const email = signupEmail.value.trim();
-  const password = signupPassword.value;
-  const confirmPassword = signupConfirmPassword.value;
+if (signupBtn) {
+  signupBtn.addEventListener('click', async () => {
+    const email = signupEmail ? signupEmail.value.trim() : '';
+    const password = signupPassword ? signupPassword.value : '';
+    const confirmPassword = signupConfirmPassword ? signupConfirmPassword.value : '';
 
-  if (password !== confirmPassword) {
-    signupMessage.textContent = 'Las contraseñas no coinciden.';
-    signupConfirmPassword.value = '';
-    signupConfirmPassword.focus();
-    return;
-  }
+    if (password !== confirmPassword) {
+      if (signupMessage) signupMessage.textContent = 'Las contraseñas no coinciden.';
+      if (signupConfirmPassword) {
+        signupConfirmPassword.value = '';
+        signupConfirmPassword.focus();
+      }
+      return;
+    }
 
-  signupMessage.textContent = 'Creando cuenta…';
-  const result = await signUpWithPassword(email, password);
+    if (signupMessage) signupMessage.textContent = 'Creando cuenta…';
+    const result = await signUpWithPassword(email, password);
 
-  if (result) {
-    signupMessage.textContent = result.message ? result.message : 'Error: ' + result.message;
-  } else {
-    signupMessage.textContent = '';
-    closeSignupModal();
-    await afterAuthSuccess();
-  }
-});
-
-authPassword.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    if (!authLoginBtn.disabled) authLoginBtn.click();
-  }
-});
-
-signupConfirmPassword.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    if (!signupBtn.disabled) signupBtn.click();
-  }
-});
+    if (result) {
+      if (signupMessage) signupMessage.textContent = result.message ? result.message : 'Error: ' + result.message;
+    } else {
+      if (signupMessage) signupMessage.textContent = '';
+      closeSignupModal();
+      await afterAuthSuccess();
+    }
+  });
+}
 
 // ==================== OPERACIONES DE TABLEROS ====================
 

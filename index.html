@@ -112,19 +112,20 @@
       <!-- Los colores se generan dinámicamente con JS -->
     </div>
 
-    <!-- Mensaje para invitados (relacionado con la acción principal, va antes de Guardar) -->
-    <div id="guest-message" style="display:none; margin-top:14px; padding:10px; background:rgba(255,255,255,.05); border-radius:8px;">
-      <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 8px;">
-        Estás como invitado. Crea una cuenta para guardar tus tableros y sincronizarlos.
-      </p>
-      <button class="btn-primary" id="profile-signup-btn" style="width:100%;">Crear cuenta</button>
-    </div>
-
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn-primary" id="profile-save" disabled>Guardar</button>
     </div>
 
-    <!-- 2 y 3. INFO SECUNDARIA + ACCIÓN DE CIERRE: separadas visualmente -->
+    <!-- Mensaje para invitados: acceso a cuenta existente o nueva -->
+    <div id="guest-message" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid var(--card-line);">
+      <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px;">
+        Estás como invitado. Inicia sesión o crea una cuenta para guardar tus tableros y sincronizarlos.
+      </p>
+      <button class="icon-btn" id="profile-login-btn" style="width:100%; color:var(--ink); border-color:var(--card-line); background:rgba(0,0,0,.04); margin-bottom:8px;">Iniciar sesión</button>
+      <button class="btn-primary" id="profile-signup-btn" style="width:100%;">Crear cuenta</button>
+    </div>
+
+    <!-- 2 y 3. INFO SECUNDARIA + ACCIÓN DE CIERRE (solo con sesión activa) -->
     <div id="account-info" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid var(--card-line);">
       <span class="input-label" style="margin-top:0;">Cuenta</span>
       <div style="font-size:13.5px; color:var(--ink-soft);">
@@ -134,7 +135,7 @@
     </div>
   </div>
 </div>
-
+  
   <!-- ========== MODAL DE INICIO DE SESIÓN ========== -->
   <div class="modal-overlay hidden" id="auth-modal">
     <div class="modal">

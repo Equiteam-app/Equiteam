@@ -84,18 +84,6 @@ export function renderHomeGrid(boards, onSelect, onDelete) {
   });
 }
 
-  boards.forEach(b => {
-    const card = document.createElement('button');
-    card.className = 'board-card';
-    card.innerHTML = `
-      <span class="board-card-dot" style="background:${colorForName(b.name)}"></span>
-      <span class="board-card-name">${escapeHtml(b.name)}</span>
-      <span class="board-card-tag">${b.role === 'owner' ? 'Administrador' : 'Invitado'}</span>
-    `;
-    card.addEventListener('click', () => onSelect(b));
-    grid.appendChild(card);
-  });
-
 export function updateHomeProfilePill(label) {
   document.getElementById('home-profile-name').textContent = label;
   document.getElementById('home-profile-avatar').textContent = initials(label);

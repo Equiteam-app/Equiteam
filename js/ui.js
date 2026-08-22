@@ -148,8 +148,15 @@ export function openProfileModal(profile, authUser) {
     if(accountInfo) accountInfo.style.display = 'none';
     signupBtn.onclick = () => {
       closeProfileModal();
-      openSignupModal(); // Ahora lleva directamente al formulario de CREAR CUENTA
+      openSignupModal();
     };
+    const loginBtn = document.getElementById('profile-login-btn');
+    if (loginBtn) {
+      loginBtn.onclick = () => {
+        closeProfileModal();
+        openAuthModal();
+      };
+    }
   } else {
     guestMessage.style.display = 'none';
     if(accountInfo) accountInfo.style.display = 'block';

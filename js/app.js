@@ -36,7 +36,30 @@ let pendingBoardName = null;
 
 // ==================== FUNCIÓN PRINCIPAL DE RENDER (TABLERO) ====================
 
-// Consulta la base de datos para obtener la lista de tareas actualizada y redibujar
+/**
+ * Dibuja la interfaz del tablero Kanban.
+ * Le pasamos los datos actuales y la función 'refreshTasksAndRender' 
+ * para que la interfaz sepa cómo recargarse al modificar una tarjeta.
+ */
+function render() {
+  renderBoard(
+    tasks,
+    profile,
+    isMetricsCollapsed,
+    () => {
+      isMetricsCollapsed = !isMetricsCollapsed;
+      render();
+    },
+    refreshTasksAndRender,
+    currentProject.id
+  );
+}
+
+/**
+ * Fuerza una consulta limpia a la base de datos (Supabase) 
+ * y luego llama a render() para repintar la pantalla.
+ * Útil para eliminar "tarjetas fantasmas" inmediatamente después de borrarlas.
+ */
 async function refreshTasksAndRender() {
   if (currentProject) {
     tasks = await fetchTasks(currentProject.id);
@@ -44,14 +67,20 @@ async function refreshTasksAndRender() {
   }
 }
 
-// Suscripción a cambios en tiempo real
+// ==================== SUSCRIPCIÓN REALTIME ====================
+
+/**
+ * Escucha eventos de la base de datos en tiempo real (INSERT, UPDATE, DELETE).
+ * Si ocurre un cambio por parte de otro compañero, actualiza automáticamente tu pantalla.
+ */
 function subscribeRealtime(projectId) {
+  // Limpiamos canales previos para evitar conexiones duplicadas en la red
   if (realtimeChannel) {
     sb.removeChannel(realtimeChannel);
     realtimeChannel = null;
   }
 
-  // Escuchamos todos los cambios de la tabla 'tasks' (incluyendo DELETE)
+  // Nos suscribimos a cualquier evento (*) en la tabla pública de tareas
   realtimeChannel = sb.channel('tasks-changes-' + projectId)
     .on(
       'postgres_changes',
@@ -61,7 +90,7 @@ function subscribeRealtime(projectId) {
         table: 'tasks'
       },
       async () => {
-        // Solo recargamos si el usuario continúa en el mismo proyecto activo
+        // Verificamos que el usuario siga activo en el mismo tablero
         if (currentProject && currentProject.id === projectId) {
           tasks = await fetchTasks(currentProject.id);
           render();

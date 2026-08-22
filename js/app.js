@@ -25,41 +25,35 @@ import {
 } from './ui.js';
 
 // ==================== ESTADO GLOBAL ====================
+// Almacenamos los datos en memoria para actualizar la UI rápidamente
 let tasks = [];
 let profile = loadProfile();
 let currentProject = null;
 let isMetricsCollapsed = true;
 let realtimeChannel = null;
-// Nombre pendiente de un tablero que el usuario quiso crear sin tener cuenta;
-// se retoma automáticamente después de iniciar sesión o registrarse.
+
+// Retiene el nombre de un tablero si el usuario intenta crearlo sin cuenta activa
 let pendingBoardName = null;
 
-// ==================== FUNCIÓN PRINCIPAL DE RENDER (TABLERO) ====================
+// ==================== FUNCIONES DE RENDER (TABLERO) ====================
 
-/**
- * Dibuja la interfaz del tablero Kanban.
- * Le pasamos los datos actuales y la función 'refreshTasksAndRender' 
- * para que la interfaz sepa cómo recargarse al modificar una tarjeta.
- */
+// Dibuja el tablero Kanban completo con base en el estado actual de la aplicación
 function render() {
   renderBoard(
     tasks,
     profile,
     isMetricsCollapsed,
     () => {
+      // Invertimos el estado del panel de métricas y redibujamos
       isMetricsCollapsed = !isMetricsCollapsed;
       render();
     },
-    refreshTasksAndRender,
+    refreshTasksAndRender, // Callback vital para actualizar tras editar/eliminar
     currentProject.id
   );
 }
 
-/**
- * Fuerza una consulta limpia a la base de datos (Supabase) 
- * y luego llama a render() para repintar la pantalla.
- * Útil para eliminar "tarjetas fantasmas" inmediatamente después de borrarlas.
- */
+// Sincroniza las tareas desde la base de datos y fuerza un renderizado limpio
 async function refreshTasksAndRender() {
   if (currentProject) {
     tasks = await fetchTasks(currentProject.id);
@@ -69,28 +63,21 @@ async function refreshTasksAndRender() {
 
 // ==================== SUSCRIPCIÓN REALTIME ====================
 
-/**
- * Escucha eventos de la base de datos en tiempo real (INSERT, UPDATE, DELETE).
- * Si ocurre un cambio por parte de otro compañero, actualiza automáticamente tu pantalla.
- */
+// Conecta con el canal de WebSockets de Supabase para escuchar cambios en vivo
 function subscribeRealtime(projectId) {
-  // Limpiamos canales previos para evitar conexiones duplicadas en la red
+  // Evitamos conexiones duplicadas cerrando el canal anterior
   if (realtimeChannel) {
     sb.removeChannel(realtimeChannel);
     realtimeChannel = null;
   }
 
-  // Nos suscribimos a cualquier evento (*) en la tabla pública de tareas
+  // Escuchamos operaciones INSERT, UPDATE y DELETE en la tabla de tareas
   realtimeChannel = sb.channel('tasks-changes-' + projectId)
     .on(
       'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'tasks'
-      },
+      { event: '*', schema: 'public', table: 'tasks' },
       async () => {
-        // Verificamos que el usuario siga activo en el mismo tablero
+        // Validamos que el usuario siga en el tablero antes de repintar
         if (currentProject && currentProject.id === projectId) {
           tasks = await fetchTasks(currentProject.id);
           render();
@@ -101,6 +88,7 @@ function subscribeRealtime(projectId) {
     .subscribe();
 }
 
+// Cierra la conexión Realtime al salir de un tablero
 function unsubscribeRealtime() {
   if (realtimeChannel) {
     sb.removeChannel(realtimeChannel);
@@ -110,18 +98,19 @@ function unsubscribeRealtime() {
 
 // ==================== HOME (GRID DE TABLEROS) ====================
 
-// Combina los tableros del servidor (donde el usuario es miembro registrado)
-// con los tableros recordados localmente (creados o abiertos por invitación
-// en este navegador), sin duplicar.
+// Unifica los tableros de la base de datos con los guardados en localStorage
 function mergeBoards(serverBoards, localBoards) {
   const map = new Map();
   serverBoards.forEach(p => map.set(p.id, { id: p.id, name: p.name, role: 'owner' }));
+  
+  // Añadimos los locales solo si no existen ya como dueños
   localBoards.forEach(b => {
     if (!map.has(b.id)) map.set(b.id, { id: b.id, name: b.name, role: 'invitado' });
   });
   return Array.from(map.values());
 }
 
+// Configura la píldora de perfil y el botón de sesión en la pantalla de inicio
 function updateHomeProfileUI(user) {
   if (user) {
     updateHomeProfilePill(user.email);
@@ -140,6 +129,7 @@ function updateHomeProfileUI(user) {
   }
 }
 
+// Prepara y dibuja la pantalla principal con la lista de proyectos
 async function renderHome() {
   unsubscribeRealtime();
   currentProject = null;
@@ -148,29 +138,33 @@ async function renderHome() {
   const user = getCurrentUser();
   updateHomeProfileUI(user);
 
+  // Cargamos ambas fuentes de datos para unificar la lista
   const serverBoards = user ? await fetchProjects() : [];
   const localBoards = getJoinedBoards();
   const boards = mergeBoards(serverBoards, localBoards);
 
-  // Boton de eliminar tablero
+  // Dibuja el grid inyectando funciones de selección y borrado
   renderHomeGrid(boards, (b) => openBoard(b.id), async (b) => {
-  if (!confirm(`¿Eliminar tablero "${b.name}"? Esta acción no se puede deshacer.`)) return;
-  
-  if (b.role === 'owner') {
-    const error = await deleteProject(b.id);
-    if (error) {
-      showToast('No se pudo eliminar el tablero.');
-      return;
+    if (!confirm(`¿Eliminar tablero "${b.name}"? Esta acción no se puede deshacer.`)) return;
+    
+    // Si es propietario, borra el registro permanentemente en Supabase
+    if (b.role === 'owner') {
+      const error = await deleteProject(b.id);
+      if (error) {
+        showToast('No se pudo eliminar el tablero.');
+        return;
+      }
     }
-  }
-  
-  removeJoinedBoard(b.id);
-  await renderHome();
-  showToast('Tablero eliminado');
-});
+    
+    removeJoinedBoard(b.id); // Limpia la memoria local
+    await renderHome();
+    showToast('Tablero eliminado');
+  });
 }
 
 // ==================== ENTRAR / ABRIR UN TABLERO ====================
+
+// Configura el contexto y carga un proyecto específico
 async function enterBoard(project) {
   currentProject = project;
   addJoinedBoard(project);
@@ -181,10 +175,11 @@ async function enterBoard(project) {
   showBoardScreen();
   updateProjectHeader(project);
 
-  // El botón de "Cerrar sesión" solo tiene sentido si hay una cuenta activa
+  // Botón de cerrar sesión visible solo si hay cuenta autenticada
   const logoutBtn = document.getElementById('logout-btn');
   logoutBtn.style.display = getCurrentUser() ? 'inline-block' : 'none';
 
+  // Evalúa si es necesario pedirle el nombre al usuario
   profile = loadProfile();
   if (profile && profile.name) {
     applyProfilePill(profile, getCurrentUser());
@@ -197,6 +192,7 @@ async function enterBoard(project) {
   subscribeRealtime(project.id);
 }
 
+// Resuelve el proyecto por ID antes de entrar (evita fallos por URL inválida)
 async function openBoard(projectId) {
   const project = await getProjectById(projectId);
   if (!project) {
@@ -207,10 +203,12 @@ async function openBoard(projectId) {
 }
 
 // ==================== FLUJO DESPUÉS DE AUTENTICARSE ====================
+
+// Decide a qué pantalla redirigir según el estado pendiente del usuario
 async function afterAuthSuccess() {
   closeAuthModal();
 
-  // Si el usuario quería crear un tablero pero no tenía cuenta, lo creamos ahora
+  // Si intentó crear un tablero sin estar logueado, lo creamos ahora automáticamente
   if (pendingBoardName) {
     const name = pendingBoardName;
     pendingBoardName = null;
@@ -228,9 +226,11 @@ async function afterAuthSuccess() {
   }
 }
 
-// ==================== INICIALIZACIÓN ====================
+// ==================== INICIALIZACIÓN (BOOT) ====================
+
+// Función de arranque de la aplicación SPA
 async function boot() {
-  // 1. Verificar credenciales de Supabase
+  // Validación estricta de credenciales de backend
   if (!SUPABASE_URL || SUPABASE_URL.includes('PEGA_AQUI') ||
       !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('PEGA_AQUI')) {
     document.getElementById('loading-screen').classList.add('hidden');
@@ -238,14 +238,13 @@ async function boot() {
     return;
   }
 
-  // 2. Cargar la sesión si existe (no es obligatoria para navegar)
+  // Restaurar estado
   await getSession();
   profile = loadProfile();
 
   document.getElementById('loading-screen').classList.add('hidden');
 
-  // 3. Si la URL trae un id de proyecto (enlace de invitación o recarga
-  //    dentro de un tablero), entramos directo — sin exigir cuenta.
+  // Enrutamiento simple: Si hay un ID en la URL, lo cargamos directo
   const projectId = getProjectIdFromUrl();
   if (projectId) {
     const project = await getProjectById(projectId);
@@ -253,29 +252,25 @@ async function boot() {
       await enterBoard(project);
       return;
     }
-    // El id en la URL ya no es válido: volvemos al home
+    // Si el ID es inválido limpiamos la URL para evitar bucles
     clearProjectUrl();
   }
 
-  // 4. Sin proyecto en la URL: mostramos el home con el grid de tableros
+  // Ruta por defecto
   await renderHome();
 }
 
-// ==================== EVENTOS DE MODALES Y BOTONES ====================
+// ==================== EVENTOS GLOBALES Y MODALES ====================
+
+// Cierra cualquier menú desplegable al hacer clic fuera de él
 document.addEventListener('click', () => {
   document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
 });
 
-// ---------- Cerrar modales con la × ----------
-document.getElementById('auth-close').addEventListener('click', () => {
-  closeAuthModal();
-});
+document.getElementById('auth-close').addEventListener('click', closeAuthModal);
+document.getElementById('signup-close').addEventListener('click', closeSignupModal);
 
-document.getElementById('signup-close').addEventListener('click', () => {
-  closeSignupModal();
-});
-
-// ---------- Perfil (nombre, sin cuenta) ----------
+// ----- Gestión del Perfil (Modales) -----
 document.getElementById('profile-pill').addEventListener('click', () => {
   openProfileModal(profile, getCurrentUser());
 });
@@ -294,11 +289,11 @@ document.getElementById('profile-input').addEventListener('keydown', (e) => {
   }
 });
 
+// Guardado del perfil en LocalStorage y actualización visual
 document.getElementById('profile-save').addEventListener('click', () => {
   const name = document.getElementById('profile-input').value.trim();
   if (!name) return;
 
-  // Obtener color seleccionado del modal
   const overlay = document.getElementById('profile-modal');
   const selectedColor = overlay.dataset.selectedColor || '#d9a441';
 
@@ -314,22 +309,20 @@ document.getElementById('profile-save').addEventListener('click', () => {
   }
 });
 
-// ==================== AUTENTICACIÓN (EMAIL + PASSWORD) ====================
+// ==================== AUTENTICACIÓN (DOM EVENTS) ====================
 
-// --- Referencias login ---
 const authEmail = document.getElementById('auth-email');
 const authPassword = document.getElementById('auth-password');
 const authLoginBtn = document.getElementById('auth-login-btn');
 const authMessage = document.getElementById('auth-message');
 
-// --- Referencias signup ---
 const signupEmail = document.getElementById('signup-email');
 const signupPassword = document.getElementById('signup-password');
 const signupConfirmPassword = document.getElementById('signup-confirm-password');
 const signupBtn = document.getElementById('signup-btn');
 const signupMessage = document.getElementById('signup-message');
 
-// --- Habilitar/deshabilitar botón de login ---
+// Valida campos vacíos para el login
 function updateLoginButton() {
   const emailOk = authEmail.value.trim().length > 0;
   const passwordOk = authPassword.value.length >= 6;
@@ -339,7 +332,7 @@ function updateLoginButton() {
 authEmail.addEventListener('input', updateLoginButton);
 authPassword.addEventListener('input', updateLoginButton);
 
-// --- Habilitar/deshabilitar botón de signup ---
+// Valida campos vacíos para el registro
 function updateSignupButton() {
   const emailOk = signupEmail.value.trim().length > 0;
   const passwordOk = signupPassword.value.length >= 6;
@@ -351,7 +344,7 @@ signupEmail.addEventListener('input', updateSignupButton);
 signupPassword.addEventListener('input', updateSignupButton);
 signupConfirmPassword.addEventListener('input', updateSignupButton);
 
-// --- Enlaces para cambiar entre modales ---
+// Transiciones de vistas (Login <-> Sign Up)
 document.getElementById('show-signup-link').addEventListener('click', (e) => {
   e.preventDefault();
   closeAuthModal();
@@ -364,7 +357,7 @@ document.getElementById('show-login-link').addEventListener('click', (e) => {
   openAuthModal();
 });
 
-// --- Login ---
+// Solicitud de Login a Supabase
 authLoginBtn.addEventListener('click', async () => {
   const email = authEmail.value.trim();
   const password = authPassword.value;
@@ -381,7 +374,7 @@ authLoginBtn.addEventListener('click', async () => {
   }
 });
 
-// --- Signup ---
+// Solicitud de Registro a Supabase
 signupBtn.addEventListener('click', async () => {
   const email = signupEmail.value.trim();
   const password = signupPassword.value;
@@ -406,7 +399,6 @@ signupBtn.addEventListener('click', async () => {
   }
 });
 
-// --- Enter en login / signup ---
 authPassword.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -421,23 +413,17 @@ signupConfirmPassword.addEventListener('keydown', (e) => {
   }
 });
 
-// ==================== CIERRE DE SESIÓN ====================
+// Limpieza de estado al cerrar sesión
 document.getElementById('logout-btn').addEventListener('click', async () => {
   await signOut();
   clearProjectUrl();
   location.reload();
 });
 
-// ==================== HOME: NAVEGACIÓN Y CREACIÓN DE TABLEROS ====================
+// ==================== OPERACIONES DE TABLEROS ====================
 
-// Botón "+ Nuevo tablero" (abre el popup de creación)
-document.getElementById('open-create-project-btn').addEventListener('click', () => {
-  openProjectModal();
-});
-
-document.getElementById('create-project-cancel').addEventListener('click', () => {
-  closeProjectModal();
-});
+document.getElementById('open-create-project-btn').addEventListener('click', openProjectModal);
+document.getElementById('create-project-cancel').addEventListener('click', closeProjectModal);
 
 document.getElementById('new-project-name').addEventListener('input', (e) => {
   document.getElementById('create-project-btn').disabled = !e.target.value.trim();
@@ -449,15 +435,14 @@ document.getElementById('new-project-name').addEventListener('keydown', (e) => {
   }
 });
 
-// Crear tablero: requiere cuenta. Si no hay sesión, se guarda el nombre
-// pendiente y se pide iniciar sesión / registrarse.
+// Creación de tablero con barrera de autenticación
 document.getElementById('create-project-btn').addEventListener('click', async () => {
   const name = document.getElementById('new-project-name').value.trim();
   if (!name) return;
 
   const user = getCurrentUser();
   if (!user) {
-    pendingBoardName = name;
+    pendingBoardName = name; // Guardamos el nombre propuesto en memoria temporal
     closeProjectModal();
     setAuthMessage('Para crear un tablero nuevo necesitas iniciar sesión o crear una cuenta. Tus compañeros pueden unirse solo con su nombre usando el enlace de invitación, sin necesidad de cuenta.');
     openAuthModal();
@@ -473,36 +458,42 @@ document.getElementById('create-project-btn').addEventListener('click', async ()
   }
 });
 
-// Volver del tablero al home
+// Salida al Hub de Proyectos
 document.getElementById('back-to-home-btn').addEventListener('click', () => {
   unsubscribeRealtime();
   clearProjectUrl();
   renderHome();
 });
 
-// Compartir / invitar: copia el enlace del tablero actual
+// Compartir usando el ID seguro y nativo de Clipboard API
 document.getElementById('share-btn').addEventListener('click', async () => {
   if (!currentProject) return;
-  const link = getInviteLink(currentProject);
+  
+  // CORRECCIÓN: Se requiere usar solo el ID del proyecto para formatear la URL limpia
+  const link = getInviteLink(currentProject.id); 
+  
   try {
     await navigator.clipboard.writeText(link);
     showToast('Enlace de invitación copiado ✅');
   } catch (e) {
-    showToast(link);
+    showToast(link); // Fallback amigable si el navegador bloquea el portapapeles
   }
 });
 
-// ==================== NUEVA TAREA ====================
+// ==================== OPERACIONES DE TAREAS ====================
+
 document.getElementById('add-task-cancel').addEventListener('click', closeAddTaskModal);
 
-//Refresca las tareas en vivo
+// Inserción de nueva tarea y repintado visual preventivo
 document.getElementById('add-task-save').addEventListener('click', async () => {
   const text = document.getElementById('new-task-text').value.trim();
   if (!text) return;
   const dueDate = document.getElementById('new-task-date').value;
+  
   await addTask(currentProject.id, 'todo', text, dueDate);
   closeAddTaskModal();
-  // Forzar refresh inmediato (fallback si Realtime tiene delay)
+  
+  // Forzamos actualización local por si la red/realtime sufre retrasos
   tasks = await fetchTasks(currentProject.id);
   render();
 });
@@ -517,14 +508,15 @@ document.getElementById('new-task-text').addEventListener('keydown', (e) => {
   }
 });
 
-// ==================== CAMBIOS DE AUTENTICACIÓN ====================
+// ==================== LISTENERS EXTERNOS ====================
+
+// Monitor de eventos de sesión integrados
 onAuthChange((event) => {
+  // Solo forzamos recarga total si se cierra sesión para purgar la memoria caché
   if (event === 'SIGNED_OUT') {
     location.reload();
   }
-  // SIGNED_IN se maneja explícitamente en los botones de login/signup
-  // (afterAuthSuccess) para controlar el flujo de "tablero pendiente".
 });
 
-// ==================== ARRANQUE ====================
+// Ejecución inicial 
 boot();

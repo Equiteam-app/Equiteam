@@ -55,7 +55,17 @@
     </header>
     <main class="home-grid" id="home-grid"></main>
     <button class="fab-new-board" id="open-create-project-btn">+ Nuevo tablero</button>
+    <div class="brand-logo" role="button" aria-label="Ir a mis tableros">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="6" width="30" height="30" rx="10" stroke="var(--todo)" stroke-width="3.5"/>
+        <line x1="14" y1="18" x2="28" y2="18" stroke="var(--todo)" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="14" y1="26" x2="24" y2="26" stroke="var(--todo)" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="35" cy="10" r="4" fill="var(--done)"/>
+      </svg>
+      <span class="brand-text">Equi<span class="accent">Team</span></span>
+    </div>
   </div>
+  
 
   <!-- ========== TABLERO: app principal ========== -->
   <div id="app" style="display:none;">
@@ -91,6 +101,15 @@
     </header>
     <main class="board" id="board"></main>
     <footer>Este tablero se guarda en Supabase y lo ven solo quienes tengan el enlace de invitación.</footer>
+    <div class="brand-logo" role="button" aria-label="Ir a mis tableros">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="6" width="30" height="30" rx="10" stroke="var(--todo)" stroke-width="3.5"/>
+        <line x1="14" y1="18" x2="28" y2="18" stroke="var(--todo)" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="14" y1="26" x2="24" y2="26" stroke="var(--todo)" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="35" cy="10" r="4" fill="var(--done)"/>
+      </svg>
+      <span class="brand-text">Equi<span class="accent">Team</span></span>
+    </div>
   </div>
 
 <!-- Modal de perfil -->

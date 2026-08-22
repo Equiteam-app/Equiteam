@@ -452,19 +452,26 @@ if (signupBtn) {
 
 // ==================== OPERACIONES DE TABLEROS ====================
 
-document.getElementById('open-create-project-btn').addEventListener('click', openProjectModal);
-document.getElementById('create-project-cancel').addEventListener('click', closeProjectModal);
+const openCreateProjectBtn = document.getElementById('open-create-project-btn');
+if (openCreateProjectBtn) openCreateProjectBtn.addEventListener('click', openProjectModal);
 
-document.getElementById('new-project-name').addEventListener('input', (e) => {
-  document.getElementById('create-project-btn').disabled = !e.target.value.trim();
-});
+const createProjectCancel = document.getElementById('create-project-cancel');
+if (createProjectCancel) createProjectCancel.addEventListener('click', closeProjectModal);
 
-document.getElementById('new-project-name').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && e.target.value.trim()) {
-    document.getElementById('create-project-btn').click();
-  }
-});
+const newProjectName = document.getElementById('new-project-name');
+if (newProjectName) {
+  newProjectName.addEventListener('input', (e) => {
+    const createBtn = document.getElementById('create-project-btn');
+    if (createBtn) createBtn.disabled = !e.target.value.trim();
+  });
 
+  newProjectName.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.value.trim()) {
+      const createBtn = document.getElementById('create-project-btn');
+      if (createBtn) createBtn.click();
+    }
+  });
+}
 // Creación de tablero con barrera de autenticación
 document.getElementById('create-project-btn').addEventListener('click', async () => {
   const name = document.getElementById('new-project-name').value.trim();
